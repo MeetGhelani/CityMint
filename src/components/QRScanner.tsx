@@ -66,8 +66,6 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
           {
             fps: 10,
             qrbox: { width: 260, height: 260 },
-            // Portrait aspect ratio (9:16) to fill phone screen
-            aspectRatio: 0.5625,
           },
           handleScan,
           () => {} // ignore per-frame errors silently
@@ -122,7 +120,7 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
 
         {/* Force-override html5-qrcode injected inline styles globally */}
         <style>{`
-          #${SCANNER_ELEMENT_ID} > div {
+          #${SCANNER_ELEMENT_ID} div {
             width: 100% !important;
             height: 100% !important;
             max-width: none !important;
