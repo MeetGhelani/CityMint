@@ -33,6 +33,18 @@ export default function InstallGate({ children }: { children: React.ReactNode })
     setMounted(true);
     if (isStandalone()) { setInstalled(true); return; }
 
+    // Read early captured event if it exists
+    if ((window as any).deferredPrompt) {
+      deferredPrompt.current = (window as any).deferredPrompt;
+      setInstallReady(true);
+    }
+
+    // Set callback in case it fires later
+    (window as any).onBeforeInstallPromptReady = (e: BeforeInstallPromptEvent) => {
+      deferredPrompt.current = e;
+      setInstallReady(true);
+    };
+
     const handleBefore = (e: Event) => {
       e.preventDefault();
       deferredPrompt.current = e as BeforeInstallPromptEvent;
@@ -45,6 +57,7 @@ export default function InstallGate({ children }: { children: React.ReactNode })
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBefore);
       window.removeEventListener('appinstalled', handleInstalled);
+      (window as any).onBeforeInstallPromptReady = null;
     };
   }, []);
 

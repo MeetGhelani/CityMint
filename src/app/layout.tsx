@@ -29,6 +29,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" style={{ background: '#0A0B10' }}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                window.deferredPrompt = e;
+                if (window.onBeforeInstallPromptReady) {
+                  window.onBeforeInstallPromptReady(e);
+                }
+              });
+            `,
+          }}
+        />
+      </head>
       <body className="theme-citymint antialiased">
         <PWARegister />
         {children}
