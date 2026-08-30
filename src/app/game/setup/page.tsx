@@ -30,13 +30,14 @@ export default function GameSetup() {
   const [showScanner, setShowScanner] = useState(false);
   const [scanTargetIndex, setScanTargetIndex] = useState<number | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [startingBalance, setStartingBalance] = useState<number>(10000);
 
-  // Setup list initialized with placeholders
+  // Setup list initialized with placeholders — colors match QR card page exactly
   const [registeredPlayers, setRegisteredPlayers] = useState<RegisteredPlayer[]>([
-    { name: 'Player A', color: '#3B82F6', playerCode: '', isRegistered: false },
-    { name: 'Player B', color: '#EF4444', playerCode: '', isRegistered: false },
-    { name: 'Player C', color: '#10B981', playerCode: '', isRegistered: false },
-    { name: 'Player D', color: '#8B5CF6', playerCode: '', isRegistered: false },
+    { name: 'Player 1', color: '#EF4444', playerCode: '', isRegistered: false }, // Red  — CM-P001-RED
+    { name: 'Player 2', color: '#3B82F6', playerCode: '', isRegistered: false }, // Blue — CM-P002-BLUE
+    { name: 'Player 3', color: '#10B981', playerCode: '', isRegistered: false }, // Green — CM-P003-GREEN
+    { name: 'Player 4', color: '#F59E0B', playerCode: '', isRegistered: false }, // Gold — CM-P004-GOLD
   ]);
 
   const handleUpdatePlayer = (index: number, fields: Partial<RegisteredPlayer>) => {
@@ -85,6 +86,11 @@ export default function GameSetup() {
       return;
     }
 
+    if (isNaN(startingBalance) || startingBalance <= 0) {
+      setSetupError('Please enter a valid starting balance greater than 0.');
+      return;
+    }
+
     try {
       // 1. Create a new GameState
       const gameData = activeList.map((p) => ({
@@ -93,7 +99,7 @@ export default function GameSetup() {
         playerCode: p.playerCode,
       }));
 
-      const gameState = createGame(gameData);
+      const gameState = createGame(gameData, startingBalance);
 
       // 2. Save Game state locally
       await localSaveGame(gameState);
@@ -229,12 +235,28 @@ export default function GameSetup() {
             })}
           </div>
 
-          {/* Starting balance display */}
-          <div className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-center">
-            <p className="text-xs text-[var(--text-secondary)]">Fixed Starting Economy</p>
-            <p className="font-display font-extrabold text-2xl text-[var(--accent-gold)] mt-1">₹10,000</p>
-            <p className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wider mt-1">
-              Credited automatically per player
+          {/* Step 3: Starting balance display (Editable) */}
+          <div className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)]">
+            <h3 className="font-display font-bold text-sm text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+              Step 3: Starting Economy (₹)
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={startingBalance}
+                onChange={(e) => setStartingBalance(Math.max(0, Number(e.target.value)))}
+                placeholder="Starting cash..."
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)] text-sm font-semibold"
+              />
+              <button
+                onClick={() => setStartingBalance(10000)}
+                className="px-4 rounded-xl border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 text-xs font-bold transition-all"
+              >
+                Reset Default
+              </button>
+            </div>
+            <p className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wider mt-2.5 px-0.5">
+              Credited automatically to all player bank accounts at launch
             </p>
           </div>
 

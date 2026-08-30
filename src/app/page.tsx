@@ -135,7 +135,7 @@ export default function Home() {
       {/* Footer / Settings Trigger */}
       <div className="flex justify-between items-center w-full max-w-sm mx-auto z-10 border-t border-[var(--border-custom)] pt-6 pb-8 mt-auto">
         <span className="text-xs text-[var(--text-secondary)] font-medium">
-          Banker PWA Version 1.0
+          CityMint Banker PWA Version 1.0
         </span>
         <button
           onClick={() => setShowSettings(true)}

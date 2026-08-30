@@ -123,7 +123,8 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
         {/* html5-qrcode target — we hide its injected UI via CSS */}
         <div
           id={SCANNER_ELEMENT_ID}
-          className="absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover
+          className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover
+            [&_div]:!w-full [&_div]:!h-full [&_div]:!max-w-none
             [&_img]:hidden [&_button]:hidden [&_select]:hidden [&_span]:hidden
             [&_div[style*='border']]:hidden"
         />

@@ -28,7 +28,7 @@ export default function QRCardsPage() {
     <main className="h-screen flex flex-col bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)]">
 
       {/* ── FIXED HEADER ── */}
-      <div className="flex-none flex items-center justify-between px-6 pt-10 pb-4 border-b border-[var(--border-custom)] bg-[var(--bg-primary)]/80 backdrop-blur-md">
+      <div className="flex-none flex items-center justify-between px-6 pt-10 pb-4 border-b border-[var(--border-custom)] bg-[var(--bg-primary)]/80 backdrop-blur-md print:hidden">
         <div className="flex items-center gap-3">
           <Link href="/" className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]">
             <ChevronLeft className="w-5 h-5" />
@@ -45,17 +45,17 @@ export default function QRCardsPage() {
       </div>
 
       {/* ── SCROLLABLE CONTENT ── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto print:overflow-visible print:h-auto print:p-0">
 
-      <div className="mx-6 mt-6 p-4 rounded-2xl bg-[var(--accent-gold)]/10 border border-[var(--accent-gold)]/20">
+      <div className="mx-6 mt-6 p-4 rounded-2xl bg-[var(--accent-gold)]/10 border border-[var(--accent-gold)]/20 print:hidden">
         <p className="text-xs text-[var(--accent-gold)] font-semibold leading-relaxed">
           📋 <strong>How to use:</strong> Print this page or screenshot each card. During game setup, each player scans their card using the Scan Card button.
         </p>
       </div>
 
-      <div className="px-6 py-6 grid grid-cols-1 gap-6 max-w-md mx-auto">
+      <div className="px-6 py-6 grid grid-cols-1 gap-6 max-w-md mx-auto print:grid-cols-2 print:gap-6 print:max-w-none print:p-0 print-card-grid">
         {PLAYER_CARDS.map((card) => (
-          <div key={card.id} className="rounded-3xl border border-white/10 overflow-hidden shadow-2xl" style={{ background: `linear-gradient(135deg, ${card.bgFrom}, ${card.bgTo})` }}>
+          <div key={card.id} className="rounded-3xl border border-white/10 overflow-hidden shadow-2xl print:shadow-none print-card" style={{ background: `linear-gradient(135deg, ${card.bgFrom}, ${card.bgTo})` }}>
             <div className="px-6 pt-6 pb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{card.emoji}</span>
@@ -78,7 +78,7 @@ export default function QRCardsPage() {
                 <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold mb-0.5">Card ID</p>
                 <p className="font-mono font-bold text-sm text-white tracking-wider">{card.id}</p>
               </div>
-              <button onClick={() => handleCopy(card.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/10 text-white text-xs font-bold active:scale-95 transition-all">
+              <button onClick={() => handleCopy(card.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/10 text-white text-xs font-bold active:scale-95 transition-all print:hidden">
                 {copied === card.id ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
               </button>
             </div>
@@ -86,7 +86,7 @@ export default function QRCardsPage() {
         ))}
       </div>
 
-      <div className="mx-6 mb-10 p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)]">
+      <div className="mx-6 mb-10 p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] print:hidden">
         <p className="text-xs text-[var(--text-secondary)] font-medium text-center">
           💡 <strong className="text-[var(--text-primary)]">No printer?</strong> Scan a screenshot of the QR from another phone screen, or manually type the Card ID during setup.
         </p>

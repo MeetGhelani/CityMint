@@ -15,18 +15,18 @@
 }
 
 /* ═══════════════════════════════════════
-   CITYMINT THEME — Deep Navy (Default)
+   CITYMINT THEME — Obsidian & Gunmetal
 ═══════════════════════════════════════ */
 :root, .theme-citymint {
   /* Backgrounds */
-  --bg-primary:      #080F26;   /* Deeper navy — richer */
-  --bg-secondary:    #0F1E40;   /* Soft royal navy */
-  --bg-elevated:     #162650;   /* Card/elevated surfaces */
+  --bg-primary:      #0A0B10;   /* Pitch Black Obsidian */
+  --bg-secondary:    #12151F;   /* Deep Gunmetal Charcoal */
+  --bg-elevated:     #1E2330;   /* Brushed Gunmetal Card */
 
   /* Text */
-  --text-primary:    #F0F4FF;   /* Cool off-white */
-  --text-secondary:  #7A90B8;   /* Muted slate-blue */
-  --text-muted:      #3D5275;   /* Very muted placeholder */
+  --text-primary:    #F8FAFC;   /* Cool off-white */
+  --text-secondary:  #94A3B8;   /* Muted Slate Gray */
+  --text-muted:      #475569;   /* Very muted placeholder */
 
   /* Accents */
   --accent-mint:     #00E5A0;   /* Vibrant mint-green */
@@ -35,8 +35,8 @@
   --accent-gold-dim: #C97F0A;   /* Darker gold */
 
   /* Borders */
-  --border-custom:   #1A2E55;   /* Subtle dark border */
-  --border-bright:   #2A4580;   /* Brighter border for focus */
+  --border-custom:   #1A202C;   /* Subtle slate border */
+  --border-bright:   #2D3748;   /* Brighter border for focus */
 
   /* Semantic */
   --danger:          #FF4D6D;
@@ -131,6 +131,16 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Remove number input spinners (arrows) globally */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 h1, h2, h3, h4, h5, h6, .font-display {
   font-family: 'Outfit', sans-serif;
 }
@@ -208,4 +218,55 @@ h1, h2, h3, h4, h5, h6, .font-display {
   -webkit-text-stroke: 1.5px var(--accent-gold);
   letter-spacing: 0.08em;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* ═══════════════════════════════════════
+   PRINT MEDIA RULES — Professional Layout
+═══════════════════════════════════════ */
+@media print {
+  /* Force browsers to print card backgrounds and text colors */
+  html, body, main, div, span, p {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Reset layout constraints to allow multi-page flow */
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #0A0B10 !important; /* Keep obsidian background if printing full color, or transparent */
+  }
+
+  main {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Hide print-hidden components */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Setup 2x2 grid layout for standard A4 page printing */
+  .print-card-grid {
+    display: grid !important;
+    grid-template-cols: 1fr 1fr !important; /* 2 columns side by side */
+    gap: 24px !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 40px 20px !important;
+    overflow: visible !important;
+  }
+
+  .print-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  }
 }

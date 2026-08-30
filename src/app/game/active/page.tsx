@@ -54,6 +54,23 @@ export default function ActiveGame() {
   const [gameDuration, setGameDuration] = useState(0);
   const durationTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Custom App Notification / Confirm Dialog States
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'warning' | 'info' } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
+  const triggerConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmModal({ title, message, onConfirm });
+  };
+
   // Load Game on mount
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -182,7 +199,7 @@ export default function ActiveGame() {
       if (game.currentPlayerId) {
         const pObj = game.players.find((p) => p.id === game.currentPlayerId);
         if (pObj && pObj.balance < 500) {
-          alert(`Insufficient Balance! Teleportation costs ₹500, but ${pObj.name} only has ₹${pObj.balance}`);
+          showToast(`Insufficient Balance! Teleportation costs ₹500, but ${pObj.name} only has ₹${pObj.balance}`);
           return;
         }
         const nextState = activateTeleport(game, game.currentPlayerId);
@@ -205,7 +222,7 @@ export default function ActiveGame() {
       const targetP = game.players.find((p) => p.playerCode === code);
       if (targetP) {
         if (targetP.status === 'ELIMINATED' || targetP.status === 'BANKRUPT') {
-          alert(`${targetP.name} is eliminated and cannot take turns.`);
+          showToast(`${targetP.name} is eliminated and cannot take turns.`);
           return;
         }
         // Optimistically update turns
@@ -215,7 +232,7 @@ export default function ActiveGame() {
         };
         updateGameState(nextState);
       } else {
-        alert('Unknown player QR code card scanned.');
+        showToast('Unknown player QR code card scanned.');
       }
       return;
     }
@@ -228,7 +245,7 @@ export default function ActiveGame() {
         setDrawnActionId(card.id);
         setScanContext('ACTION');
       } else {
-        alert('Unknown action card code scanned.');
+        showToast('Unknown action card code scanned.');
       }
       return;
     }
@@ -248,7 +265,7 @@ export default function ActiveGame() {
         setScanContext('RENT');
       }
     } else {
-      alert(`Scanned code "${code}" not recognized as a valid CityMint board space.`);
+      showToast(`Scanned code "${code}" not recognized as a valid CityMint board space.`);
     }
   };
 
@@ -270,12 +287,16 @@ export default function ActiveGame() {
   };
 
   const handleSellProperty = (propId: string, ownerId: string) => {
-    if (confirm('Are you sure you want to sell/mortgage this property back to the Bank? You receive 50% of its valuation.')) {
-      const nextState = sellProperty(game, ownerId, propId);
-      updateGameState(nextState);
-      setScanContext(null);
-      setScannedProperty(null);
-    }
+    triggerConfirm(
+      'Sell Property',
+      'Are you sure you want to sell/mortgage this property back to the Bank? You receive 50% of its valuation.',
+      () => {
+        const nextState = sellProperty(game, ownerId, propId);
+        updateGameState(nextState);
+        setScanContext(null);
+        setScannedProperty(null);
+      }
+    );
   };
 
   const handleApplyActionCard = () => {
@@ -304,16 +325,20 @@ export default function ActiveGame() {
       ? 'Eliminate this player and continue game with remaining players?'
       : 'End game immediately and determine winner based on net worth?';
       
-    if (confirm(desc)) {
-      const nextState = declareBankruptcy(game, choice);
-      updateGameState(nextState);
-    }
+    triggerConfirm(
+      'Declare Bankruptcy',
+      desc,
+      () => {
+        const nextState = declareBankruptcy(game, choice);
+        updateGameState(nextState);
+      }
+    );
   };
 
   // Admin panels manual adjustments
   const handleAdminApply = () => {
     if (!adminSelectedPlayer) {
-      alert('Please select a player to adjust.');
+      showToast('Please select a player to adjust.');
       return;
     }
 
@@ -339,10 +364,14 @@ export default function ActiveGame() {
 
   // Exit game manually
   const handleExitGame = () => {
-    if (confirm('Force end active game? Rankings will be computed based on current asset valuations.')) {
-      const nextState = endGame(game);
-      updateGameState(nextState);
-    }
+    triggerConfirm(
+      'Exit Active Game',
+      'Force end active game? Rankings will be computed based on current asset valuations.',
+      () => {
+        const nextState = endGame(game);
+        updateGameState(nextState);
+      }
+    );
   };
 
   return (
@@ -957,6 +986,49 @@ export default function ActiveGame() {
               Apply Correction Log
             </button>
 
+          </div>
+        </div>
+      )}
+
+      {/* 5. CUSTOM TOAST & CONFIRM OVERLAYS */}
+
+      {/* Floating App-wide Toast */}
+      {toast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm p-4 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-md shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
+          <span className="text-base">⚠️</span>
+          <p className="text-xs font-semibold text-red-400 leading-relaxed">
+            {toast.message}
+          </p>
+        </div>
+      )}
+
+      {/* App-wide Custom Confirm Dialog Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
+            <h3 className="font-display font-extrabold text-lg text-[var(--text-primary)] mb-2">
+              {confirmModal.title}
+            </h3>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-6">
+              {confirmModal.message}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="py-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] font-bold text-xs active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="py-3 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-xs active:scale-95 transition-all shadow-md shadow-[var(--accent-mint)]/10"
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}

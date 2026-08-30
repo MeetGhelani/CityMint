@@ -165,14 +165,17 @@ export function generateGameId(): string {
 }
 
 // Create Game Engine Initial State
-export function createGame(playersData: { name: string; color: string; playerCode: string }[]): GameState {
+export function createGame(
+  playersData: { name: string; color: string; playerCode: string }[],
+  startingBalance: number = 10000
+): GameState {
   const id = generateGameId();
   const players: Player[] = playersData.map((p, idx) => ({
     id: `player-${idx + 1}`,
     playerCode: p.playerCode,
     name: p.name,
     color: p.color,
-    balance: 10000, // ₹10,000 starting cash
+    balance: startingBalance, // starting cash
     status: 'ACTIVE',
     jailTurns: 0,
   }));
