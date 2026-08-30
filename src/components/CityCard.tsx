@@ -49,7 +49,7 @@ export default function CityCard({
         {onClose && (
           <button 
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-[var(--text-secondary)] active:bg-white/10 active:scale-95 transition-all"
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--bg-elevated)] text-[var(--text-secondary)] active:scale-95 transition-all"
           >
             ✕
           </button>
@@ -58,14 +58,14 @@ export default function CityCard({
 
       {/* Property Details */}
       <div className="p-6">
-        <h2 className="font-display font-extrabold text-3xl text-white tracking-tight mb-1">
+        <h2 className="font-display font-extrabold text-3xl text-[var(--text-primary)] tracking-tight mb-1">
           {property.cityName}
         </h2>
         
         {/* Ownership Tag */}
         <div className="flex items-center gap-2 mb-6">
           {isOwned ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-white">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)]">
               Owned by <strong className="ml-1 text-[var(--accent-mint)]">{ownerName}</strong>
             </span>
           ) : (
@@ -73,20 +73,20 @@ export default function CityCard({
               ● Unowned
             </span>
           )}
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-white ml-auto">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] ml-auto">
             Value: ₹{getPropertyValue(property)}
           </span>
         </div>
 
         {/* Pricing List */}
-        <div className="space-y-3 mb-6 bg-black/20 rounded-xl p-4 border border-[var(--border-custom)]">
-          <div className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+        <div className="space-y-3 mb-6 bg-[var(--bg-primary)] rounded-xl p-4 border border-[var(--border-custom)]">
+          <div className="flex justify-between items-center text-sm border-b border-[var(--border-custom)] pb-2">
             <span className="text-[var(--text-secondary)]">Purchase Price</span>
-            <span className="font-display font-bold text-white text-base">₹{property.purchasePrice}</span>
+            <span className="font-display font-bold text-[var(--text-primary)] text-base">₹{property.purchasePrice}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-[var(--text-secondary)]">Base Rent (L1)</span>
-            <span className="font-display font-semibold text-white">₹{property.baseRent}</span>
+            <span className="font-display font-semibold text-[var(--text-primary)]">₹{property.baseRent}</span>
           </div>
         </div>
 
@@ -105,12 +105,12 @@ export default function CityCard({
                 key={lvl}
                 className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all border ${
                   isCurrent 
-                    ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)]/40 text-white font-semibold' 
+                    ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)]/40 text-[var(--text-primary)] font-semibold' 
                     : 'bg-transparent border-transparent text-[var(--text-secondary)]'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-[var(--accent-mint)]' : 'bg-white/20'}`} />
+                  <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-[var(--accent-mint)]' : 'bg-[var(--border-custom)]'}`} />
                   <span>Level {lvl} {lvl === 5 && '(MAX)'}</span>
                   {isCurrent && (
                     <span className="text-[10px] uppercase font-bold tracking-wider bg-[var(--accent-mint)]/20 text-[var(--accent-mint)] px-1.5 py-0.5 rounded ml-2">
@@ -118,7 +118,7 @@ export default function CityCard({
                     </span>
                   )}
                 </div>
-                <div className="font-display font-bold">
+                <div className="font-display font-bold text-[var(--text-primary)]">
                   ₹{rent}
                 </div>
               </div>

@@ -346,14 +346,14 @@ export default function ActiveGame() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--bg-primary)]">
+    <div className="h-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden">
       
       {/* 1. Header Area */}
       <header className="px-6 py-4 border-b border-[var(--border-custom)] bg-[var(--bg-secondary)] flex items-center justify-between safe-padding-top select-none">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-display font-extrabold text-sm tracking-wider uppercase text-white">CityMint</h1>
-            <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded text-[var(--text-secondary)]">
+            <h1 className="font-display font-extrabold text-sm tracking-wider uppercase text-[var(--text-primary)]">CityMint</h1>
+            <span className="text-[10px] font-bold bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded text-[var(--text-secondary)]">
               {game.id}
             </span>
           </div>
@@ -365,9 +365,9 @@ export default function ActiveGame() {
         </div>
 
         {/* Sync Indicator */}
-        <div className="flex items-center gap-2 bg-black/25 px-3 py-1.5 rounded-full border border-white/5">
+        <div className="flex items-center gap-2 bg-[var(--bg-primary)]/80 px-3 py-1.5 rounded-full border border-[var(--border-custom)]">
           <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[var(--accent-mint)]' : 'bg-orange-400'}`} />
-          <span className="text-[9px] uppercase tracking-wider font-bold text-white">
+          <span className="text-[9px] uppercase tracking-wider font-bold text-[var(--text-primary)]">
             {isOnline ? (syncing ? 'Syncing...' : 'Synced') : 'Offline'}
           </span>
         </div>
@@ -384,18 +384,18 @@ export default function ActiveGame() {
             <div 
               className="p-5 rounded-2xl border flex items-center justify-between transition-all"
               style={{ 
-                borderColor: (currentPlayer?.color || '#FFFFFF') + '30',
-                backgroundColor: (currentPlayer?.color || '#FFFFFF') + '08'
+                borderColor: 'var(--border-custom)',
+                backgroundColor: 'var(--bg-secondary)'
               }}
             >
               <div className="flex items-center gap-3">
                 <span 
-                  className="w-5 h-5 rounded-full border-2 border-white/20 animate-pulse"
+                  className="w-5 h-5 rounded-full border border-white/20 animate-pulse"
                   style={{ backgroundColor: currentPlayer?.color }}
                 />
                 <div>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)]">Current Turn</p>
-                  <h2 className="font-display font-extrabold text-xl text-white">
+                  <h2 className="font-display font-extrabold text-xl text-[var(--text-primary)]">
                     {currentPlayer?.name}
                   </h2>
                 </div>
@@ -412,7 +412,7 @@ export default function ActiveGame() {
               <div className="absolute -right-24 -top-24 w-48 h-48 rounded-full bg-white/3 blur-2xl pointer-events-none" />
               <Landmark className="w-10 h-10 text-[var(--accent-gold)] mx-auto mb-3 opacity-60" />
               <p className="text-xs text-[var(--text-secondary)] font-semibold tracking-wider uppercase">Active Banker Balance</p>
-              <h3 className="font-display font-extrabold text-5xl text-white tracking-tight mt-2 mb-1">
+              <h3 className="font-display font-extrabold text-5xl text-[var(--text-primary)] tracking-tight mt-2 mb-1">
                 ₹{currentPlayer?.balance.toLocaleString()}
               </h3>
               {currentPlayer && (
@@ -441,7 +441,7 @@ export default function ActiveGame() {
               <button
                 onClick={handleUndo}
                 disabled={game.undoStack.length === 0}
-                className="py-3 rounded-xl border border-[var(--border-custom)] bg-white/5 text-white active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
+                className="py-3 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
               >
                 <RotateCcw className="w-4 h-4" />
                 Undo
@@ -449,14 +449,14 @@ export default function ActiveGame() {
 
               <button
                 onClick={() => setShowAdminPanel(true)}
-                className="py-3 rounded-xl border border-[var(--border-custom)] bg-white/5 text-white active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5"
+                className="py-3 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5"
               >
                 Adjust
               </button>
 
               <button
                 onClick={handleEndTurn}
-                className="py-3 rounded-xl bg-white/10 text-white active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5 border border-white/10"
+                className="py-3 rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-custom)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5"
               >
                 End Turn
                 <ArrowRight className="w-4 h-4" />
@@ -469,7 +469,7 @@ export default function ActiveGame() {
         {/* TABS 2: Live Leaderboard/Rankings */}
         {activeTab === 'dashboard' && (
           <div className="h-full overflow-y-auto p-6 space-y-4">
-            <h3 className="font-display font-extrabold text-lg text-white mb-2">Live Rankings</h3>
+            <h3 className="font-display font-extrabold text-lg text-[var(--text-primary)] mb-2">Live Rankings</h3>
             
             {/* Sort players by Net Worth */}
             {[...game.players]
@@ -493,7 +493,7 @@ export default function ActiveGame() {
                         style={{ backgroundColor: player.color }}
                       />
                       <div>
-                        <h4 className="font-display font-bold text-base text-white">
+                        <h4 className="font-display font-bold text-base text-[var(--text-primary)]">
                           {player.name}
                         </h4>
                         <div className="flex gap-2 text-[10px] text-[var(--text-secondary)] mt-0.5">
@@ -506,7 +506,7 @@ export default function ActiveGame() {
                     
                     <div className="text-right">
                       <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">Net Worth</p>
-                      <p className="font-display font-extrabold text-lg text-white mt-0.5">
+                      <p className="font-display font-extrabold text-lg text-[var(--text-primary)] mt-0.5">
                         ₹{worth.toLocaleString()}
                       </p>
                     </div>
@@ -528,7 +528,7 @@ export default function ActiveGame() {
         {/* TABS 3: Transaction Logs */}
         {activeTab === 'transactions' && (
           <div className="h-full overflow-y-auto p-6 space-y-4">
-            <h3 className="font-display font-extrabold text-lg text-white mb-2">Audit History</h3>
+            <h3 className="font-display font-extrabold text-lg text-[var(--text-primary)] mb-2">Audit History</h3>
             
             {game.transactions.length > 0 ? (
               <div className="space-y-3">
@@ -543,7 +543,7 @@ export default function ActiveGame() {
                       </span>
                       <span>Turn {tx.turnNumber}</span>
                     </div>
-                    <p className="text-white font-medium leading-relaxed">
+                    <p className="text-[var(--text-primary)] font-medium leading-relaxed">
                       {tx.description}
                     </p>
                     <span className="block text-[9px] text-[var(--text-secondary)] text-right">
@@ -563,7 +563,7 @@ export default function ActiveGame() {
 
         {/* TABS 4: Rulebook Search */}
         {activeTab === 'rules' && (
-          <div className="h-full overflow-hidden">
+          <div className="h-full overflow-y-auto">
             <RulebookSearch />
           </div>
         )}
@@ -575,7 +575,7 @@ export default function ActiveGame() {
               {/* Alert Header */}
               <div className="text-center">
                 <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-3 animate-bounce" />
-                <h2 className="font-display font-extrabold text-2xl text-white">Debt Settlement</h2>
+                <h2 className="font-display font-extrabold text-2xl text-[var(--text-primary)]">Debt Settlement</h2>
                 <p className="text-xs text-[var(--text-secondary)] mt-1">
                   {activeDebtor.name} owes ₹{game.activeDebt.amountDue} to {activeCreditorName}
                 </p>
@@ -583,9 +583,9 @@ export default function ActiveGame() {
 
               {/* Cash Balance Status Card */}
               <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-3 bg-white/5 rounded-xl border border-[var(--border-custom)]">
+                <div className="p-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-custom)]">
                   <span className="text-[9px] text-[var(--text-secondary)] uppercase font-semibold">Cash Available</span>
-                  <p className="font-display font-extrabold text-base text-white mt-1">₹{activeDebtor.balance}</p>
+                  <p className="font-display font-extrabold text-base text-[var(--text-primary)] mt-1">₹{activeDebtor.balance}</p>
                 </div>
                 <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20 col-span-2">
                   <span className="text-[9px] text-red-400 uppercase font-semibold">Remaining Shortfall</span>
@@ -612,7 +612,7 @@ export default function ActiveGame() {
                             className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex items-center justify-between"
                           >
                             <div>
-                              <h4 className="font-display font-bold text-sm text-white">{prop.cityName}</h4>
+                              <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">{prop.cityName}</h4>
                               <p className="text-[10px] text-[var(--text-secondary)]">Current Level: {prop.level} (Worth ₹{val})</p>
                             </div>
                             <button
@@ -626,7 +626,7 @@ export default function ActiveGame() {
                       })}
                   </div>
                 ) : (
-                  <div className="text-center p-6 bg-white/3 rounded-xl border border-dashed border-[var(--border-custom)] text-xs text-[var(--text-secondary)]">
+                  <div className="text-center p-6 bg-[var(--bg-secondary)]/50 rounded-xl border border-dashed border-[var(--border-custom)] text-xs text-[var(--text-secondary)]">
                     No properties owned to liquidate.
                   </div>
                 )}
@@ -670,7 +670,7 @@ export default function ActiveGame() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-gold)] bg-[var(--accent-gold)]/10 px-3 py-1 rounded-full border border-[var(--accent-gold)]/20">
                 Champion Declared
               </span>
-              <h2 className="font-display font-extrabold text-4xl text-white tracking-tight mt-4">
+              <h2 className="font-display font-extrabold text-4xl text-[var(--text-primary)] tracking-tight mt-4">
                 {game.players.find((p) => p.id === game.winnerId)?.name}
               </h2>
               <p className="text-xs text-[var(--text-secondary)] mt-1">
@@ -691,15 +691,15 @@ export default function ActiveGame() {
                 .map((p, idx) => {
                   const active = p.status !== 'ELIMINATED' && p.status !== 'BANKRUPT';
                   return (
-                    <div key={p.id} className="flex justify-between items-center text-sm border-b border-white/5 pb-2 last:border-b-0">
+                    <div key={p.id} className="flex justify-between items-center text-sm border-b border-[var(--border-custom)] pb-2 last:border-b-0">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-[var(--accent-gold)]">#{idx+1}</span>
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                        <span className={`font-semibold ${active ? 'text-white' : 'text-[var(--text-secondary)] line-through'}`}>
-                          {p.name}
+                        <span className={`font-semibold ${active ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] line-through'}`}>
+                           {p.name}
                         </span>
                       </div>
-                      <span className="font-display font-bold text-white">
+                      <span className="font-display font-bold text-[var(--text-primary)]">
                         ₹{calculateNetWorth(p, game.properties).toLocaleString()}
                       </span>
                     </div>
@@ -719,14 +719,14 @@ export default function ActiveGame() {
 
       </div>
 
-      {/* 3. Bottom Navigation Bar */}
+      {/* 3. Bottom Navigation Bar — always fixed at bottom */}
       {game.status === 'ACTIVE' && (
-        <nav className="border-t border-[var(--border-custom)] bg-[var(--bg-secondary)] grid grid-cols-4 select-none safe-padding-bottom">
+        <nav className="flex-none border-t border-[var(--border-custom)] bg-[var(--bg-secondary)] grid grid-cols-4 select-none safe-padding-bottom">
           {[
-            { id: 'game', label: 'Play', icon: Landmark },
-            { id: 'dashboard', label: 'Rankings', icon: Trophy },
-            { id: 'transactions', label: 'History', icon: History },
-            { id: 'rules', label: 'Rules', icon: Search },
+            { id: 'game',         label: 'Play',     icon: Landmark },
+            { id: 'dashboard',    label: 'Rankings', icon: Trophy },
+            { id: 'transactions', label: 'Ledger',   icon: History },
+            { id: 'rules',        label: 'Rules',    icon: Search },
           ].map((tab) => {
             const Icon = tab.icon;
             const isSelected = activeTab === tab.id;
@@ -734,10 +734,13 @@ export default function ActiveGame() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-3 flex flex-col items-center gap-1.5 transition-all active:bg-white/3 ${
+                className={`py-3 flex flex-col items-center gap-1 transition-all relative ${
                   isSelected ? 'text-[var(--accent-mint)]' : 'text-[var(--text-secondary)]'
                 }`}
               >
+                {isSelected && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-full bg-[var(--accent-mint)]" />
+                )}
                 <Icon className="w-5 h-5" />
                 <span className="text-[10px] font-semibold">{tab.label}</span>
               </button>
@@ -805,10 +808,10 @@ export default function ActiveGame() {
             <h3 className="font-display font-extrabold text-sm uppercase text-[var(--accent-gold)] tracking-wider mb-2">
               Action Card Drawn
             </h3>
-            <h2 className="font-display font-extrabold text-2xl text-white mb-4">
+            <h2 className="font-display font-extrabold text-2xl text-[var(--text-primary)] mb-4">
               {ACTION_CARDS.find((c) => c.id === drawnActionId)?.name}
             </h2>
-            <div className="p-4 bg-black/20 border border-[var(--border-custom)] rounded-xl text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
+            <div className="p-4 bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
               {ACTION_CARDS.find((c) => c.id === drawnActionId)?.description}
             </div>
             <button
@@ -826,10 +829,10 @@ export default function ActiveGame() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center p-6 animate-in fade-in duration-200">
           <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-6 shadow-2xl overflow-y-auto max-h-[85vh]">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-display font-extrabold text-xl text-white">Manual Adjustments</h3>
+              <h3 className="font-display font-extrabold text-xl text-[var(--text-primary)]">Manual Adjustments</h3>
               <button 
                 onClick={() => setShowAdminPanel(false)}
-                className="text-xs font-bold bg-white/5 px-3 py-1.5 rounded-full text-[var(--text-secondary)]"
+                className="text-xs font-bold bg-[var(--bg-elevated)] px-3 py-1.5 rounded-full text-[var(--text-secondary)]"
               >
                 Cancel
               </button>
@@ -841,24 +844,24 @@ export default function ActiveGame() {
               <select
                 value={adminSelectedPlayer}
                 onChange={(e) => setAdminSelectedPlayer(e.target.value)}
-                className="w-full bg-black/20 border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-sm text-white"
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-sm text-[var(--text-primary)]"
               >
                 <option value="">-- Choose Player --</option>
                 {game.players.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id} className="text-[var(--text-primary)] bg-[var(--bg-primary)]">{p.name}</option>
                 ))}
               </select>
             </div>
 
             {/* Adjust Balance or Jail status */}
             {adminSelectedPlayer && (
-              <div className="space-y-4 mb-4 p-4 rounded-xl bg-black/10 border border-white/5">
+              <div className="space-y-4 mb-4 p-4 rounded-xl bg-[var(--bg-primary)]/50 border border-[var(--border-custom)]">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">Adjust Balance (₹)</label>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => setAdminBalanceChange((prev) => prev - 500)}
-                      className="px-3 bg-white/5 border border-[var(--border-custom)] text-white text-xs rounded-lg active:scale-95"
+                      className="px-3 bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs rounded-lg active:scale-95 hover:bg-[var(--bg-elevated)]"
                     >
                       -500
                     </button>
@@ -866,11 +869,11 @@ export default function ActiveGame() {
                       type="number"
                       value={adminBalanceChange}
                       onChange={(e) => setAdminBalanceChange(Number(e.target.value))}
-                      className="flex-1 bg-black/25 text-center border border-[var(--border-custom)] rounded-lg py-1.5 text-sm text-white"
+                      className="flex-1 bg-[var(--bg-primary)] text-center border border-[var(--border-custom)] rounded-lg py-1.5 text-sm text-[var(--text-primary)]"
                     />
                     <button 
                       onClick={() => setAdminBalanceChange((prev) => prev + 500)}
-                      className="px-3 bg-white/5 border border-[var(--border-custom)] text-white text-xs rounded-lg active:scale-95"
+                      className="px-3 bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs rounded-lg active:scale-95 hover:bg-[var(--bg-elevated)]"
                     >
                       +500
                     </button>
@@ -882,13 +885,13 @@ export default function ActiveGame() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setAdminSetJail('ACTIVE')}
-                      className={`py-2 rounded-lg text-xs font-semibold ${adminSetJail === 'ACTIVE' ? 'bg-[var(--accent-mint)] text-[var(--bg-primary)]' : 'bg-white/5 border border-[var(--border-custom)] text-white'}`}
+                      className={`py-2 rounded-lg text-xs font-semibold ${adminSetJail === 'ACTIVE' ? 'bg-[var(--accent-mint)] text-[var(--bg-primary)]' : 'bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'}`}
                     >
                       Set Active
                     </button>
                     <button
                       onClick={() => setAdminSetJail('IN_JAIL')}
-                      className={`py-2 rounded-lg text-xs font-semibold ${adminSetJail === 'IN_JAIL' ? 'bg-red-500 text-white' : 'bg-white/5 border border-[var(--border-custom)] text-white'}`}
+                      className={`py-2 rounded-lg text-xs font-semibold ${adminSetJail === 'IN_JAIL' ? 'bg-red-500 text-white' : 'bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'}`}
                     >
                       Send to Jail
                     </button>
@@ -903,29 +906,29 @@ export default function ActiveGame() {
               <select
                 value={adminSelectedProp}
                 onChange={(e) => setAdminSelectedProp(e.target.value)}
-                className="w-full bg-black/20 border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-sm text-white"
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-sm text-[var(--text-primary)]"
               >
                 <option value="">-- Choose Property --</option>
                 {game.properties.map((p) => (
-                  <option key={p.id} value={p.id}>{p.cityName}</option>
+                  <option key={p.id} value={p.id} className="text-[var(--text-primary)] bg-[var(--bg-primary)]">{p.cityName}</option>
                 ))}
               </select>
             </div>
 
             {/* Adjust Property details */}
             {adminSelectedProp && (
-              <div className="space-y-4 mb-4 p-4 rounded-xl bg-black/10 border border-white/5">
+              <div className="space-y-4 mb-4 p-4 rounded-xl bg-[var(--bg-primary)]/50 border border-[var(--border-custom)]">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">Property Owner</label>
                   <select
                     value={adminPropOwner}
                     onChange={(e) => setAdminPropOwner(e.target.value)}
-                    className="w-full bg-black/25 border border-[var(--border-custom)] rounded-lg py-1.5 px-2 text-xs text-white"
+                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-lg py-1.5 px-2 text-xs text-[var(--text-primary)]"
                   >
-                    <option value="">-- No Change --</option>
-                    <option value="UNOWNED">Set Unowned</option>
+                    <option value="" className="bg-[var(--bg-primary)] text-[var(--text-primary)]">-- No Change --</option>
+                    <option value="UNOWNED" className="bg-[var(--bg-primary)] text-[var(--text-primary)]">Set Unowned</option>
                     {game.players.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+                      <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.name}</option>
                     ))}
                   </select>
                 </div>
