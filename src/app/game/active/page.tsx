@@ -7,7 +7,7 @@ import confetti from 'canvas-confetti';
 import { 
   Camera, RotateCcw, AlertTriangle, ArrowRight, ShieldAlert,
   History, Trophy, Landmark, Info, Search, HeartHandshake,
-  UserCheck, Plus, Minus, Check, CheckSquare, Trash2, HelpCircle
+  UserCheck, Plus, Minus, Check, CheckSquare, Trash2, HelpCircle, ChevronDown
 } from 'lucide-react';
 
 import { 
@@ -870,16 +870,19 @@ export default function ActiveGame() {
             {/* Select Target Player */}
             <div className="space-y-2 mb-4">
               <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">1. Select Player</label>
-              <select
-                value={adminSelectedPlayer}
-                onChange={(e) => setAdminSelectedPlayer(e.target.value)}
-                className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-sm text-[var(--text-primary)]"
-              >
-                <option value="">-- Choose Player --</option>
-                {game.players.map((p) => (
-                  <option key={p.id} value={p.id} className="text-[var(--text-primary)] bg-[var(--bg-primary)]">{p.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={adminSelectedPlayer}
+                  onChange={(e) => setAdminSelectedPlayer(e.target.value)}
+                  className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 pl-3 pr-10 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                >
+                  <option value="">-- Choose Player --</option>
+                  {game.players.map((p) => (
+                    <option key={p.id} value={p.id} className="text-[var(--text-primary)] bg-[var(--bg-primary)]">{p.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+              </div>
             </div>
 
             {/* Adjust Balance or Jail status */}
@@ -932,16 +935,19 @@ export default function ActiveGame() {
             {/* Select Target Property */}
             <div className="space-y-2 mb-4">
               <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">2. Adjust Property (Optional)</label>
-              <select
-                value={adminSelectedProp}
-                onChange={(e) => setAdminSelectedProp(e.target.value)}
-                className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-sm text-[var(--text-primary)]"
-              >
-                <option value="">-- Choose Property --</option>
-                {game.properties.map((p) => (
-                  <option key={p.id} value={p.id} className="text-[var(--text-primary)] bg-[var(--bg-primary)]">{p.cityName}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={adminSelectedProp}
+                  onChange={(e) => setAdminSelectedProp(e.target.value)}
+                  className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 pl-3 pr-10 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                >
+                  <option value="">-- Choose Property --</option>
+                  {game.properties.map((p) => (
+                    <option key={p.id} value={p.id} className="text-[var(--text-primary)] bg-[var(--bg-primary)]">{p.cityName}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+              </div>
             </div>
 
             {/* Adjust Property details */}
@@ -949,17 +955,20 @@ export default function ActiveGame() {
               <div className="space-y-4 mb-4 p-4 rounded-xl bg-[var(--bg-primary)]/50 border border-[var(--border-custom)]">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)]">Property Owner</label>
-                  <select
-                    value={adminPropOwner}
-                    onChange={(e) => setAdminPropOwner(e.target.value)}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-lg py-1.5 px-2 text-xs text-[var(--text-primary)]"
-                  >
-                    <option value="" className="bg-[var(--bg-primary)] text-[var(--text-primary)]">-- No Change --</option>
-                    <option value="UNOWNED" className="bg-[var(--bg-primary)] text-[var(--text-primary)]">Set Unowned</option>
-                    {game.players.map((p) => (
-                      <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={adminPropOwner}
+                      onChange={(e) => setAdminPropOwner(e.target.value)}
+                      className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-lg py-1.5 pl-2 pr-8 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                    >
+                      <option value="" className="bg-[var(--bg-primary)] text-[var(--text-primary)]">-- No Change --</option>
+                      <option value="UNOWNED" className="bg-[var(--bg-primary)] text-[var(--text-primary)]">Set Unowned</option>
+                      {game.players.map((p) => (
+                        <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-secondary)] pointer-events-none" />
+                  </div>
                 </div>
 
                 <div className="space-y-2">

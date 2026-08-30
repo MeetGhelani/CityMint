@@ -66,8 +66,8 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
           {
             fps: 10,
             qrbox: { width: 260, height: 260 },
-            // Disable the built-in UI decorations
-            aspectRatio: 1.0,
+            // Portrait aspect ratio (9:16) to fill phone screen
+            aspectRatio: 0.5625,
           },
           handleScan,
           () => {} // ignore per-frame errors silently
@@ -120,13 +120,33 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
       {/* ── CAMERA AREA ── */}
       <div className="flex-1 relative overflow-hidden bg-black">
 
-        {/* html5-qrcode target — we hide its injected UI via CSS */}
+        {/* Force-override html5-qrcode injected inline styles globally */}
+        <style>{`
+          #${SCANNER_ELEMENT_ID} > div {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            padding-bottom: 0 !important;
+          }
+          #${SCANNER_ELEMENT_ID} video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            position: absolute !important;
+            inset: 0 !important;
+          }
+          #${SCANNER_ELEMENT_ID} img,
+          #${SCANNER_ELEMENT_ID} button,
+          #${SCANNER_ELEMENT_ID} select,
+          #${SCANNER_ELEMENT_ID} span {
+            display: none !important;
+          }
+        `}</style>
+
+        {/* html5-qrcode target */}
         <div
           id={SCANNER_ELEMENT_ID}
-          className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover
-            [&_div]:!w-full [&_div]:!h-full [&_div]:!max-w-none
-            [&_img]:hidden [&_button]:hidden [&_select]:hidden [&_span]:hidden
-            [&_div[style*='border']]:hidden"
+          className="absolute inset-0"
         />
 
         {/* Darken overlay with a transparent scanning window */}

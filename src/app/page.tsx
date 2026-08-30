@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Play, RotateCcw, BookOpen, Settings, History, QrCode } from 'lucide-react';
 import { localGetSetting, localSaveSetting, localGetHistory, localGetGame } from '@/lib/db';
 import RulebookSearch from '@/components/RulebookSearch';
+import InstallGate from '@/components/InstallGate';
 
 export default function Home() {
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
@@ -56,6 +57,7 @@ export default function Home() {
   };
 
   return (
+    <InstallGate>
     <main className="min-h-screen flex flex-col px-6 py-12 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)] relative overflow-y-auto">
       
       {/* Visual Background Decoration */}
@@ -129,6 +131,29 @@ export default function Home() {
             <QrCode className="w-5 h-5 text-purple-400" />
             <span className="text-xs font-semibold">QR Cards</span>
           </Link>
+        </div>
+      </div>
+
+      {/* Brand Feature Highlights */}
+      <div className="w-full max-w-sm mx-auto z-10 mb-6">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--text-muted)] text-center mb-4">
+          Everything you need to run the game
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: '🏦', label: 'Smart Banker', sub: 'Auto rent & buy logic' },
+            { icon: '📱', label: 'QR Scanning', sub: 'Instant card detection' },
+            { icon: '⚡', label: 'Offline First', sub: 'No internet needed' },
+          ].map((feat) => (
+            <div
+              key={feat.label}
+              className="flex flex-col items-center text-center p-3 rounded-2xl border border-[var(--border-custom)] bg-[var(--bg-secondary)]/60"
+            >
+              <span className="text-xl mb-2">{feat.icon}</span>
+              <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{feat.label}</p>
+              <p className="text-[9px] text-[var(--text-muted)] mt-0.5 leading-tight">{feat.sub}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -268,5 +293,6 @@ export default function Home() {
       )}
 
     </main>
+    </InstallGate>
   );
 }

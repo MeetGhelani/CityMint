@@ -136,7 +136,7 @@ export default function GameSetup() {
       </div>
 
       {/* ── SCROLLABLE STEPS AREA ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-32 space-y-6">
         <div className="w-full max-w-md mx-auto space-y-6">
 
           {/* Step 1: Select Player Count */}
@@ -226,8 +226,19 @@ export default function GameSetup() {
                   </div>
 
                   {isConfigured && (
-                    <div className="text-[10px] font-mono text-[var(--text-secondary)] mt-2 pl-2 bg-[var(--bg-primary)]/80 py-1.5 rounded max-w-max border border-[var(--border-custom)]">
-                      Card ID: {player.playerCode}
+                    <div
+                      className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl border"
+                      style={{
+                        backgroundColor: `${player.color}10`,
+                        borderColor: `${player.color}30`,
+                        borderLeftWidth: '3px',
+                        borderLeftColor: player.color,
+                      }}
+                    >
+                      <span className="text-[9px] uppercase tracking-widest font-bold text-[var(--text-secondary)]">Card ID</span>
+                      <span className="font-mono font-bold text-xs tracking-wider" style={{ color: player.color }}>
+                        {player.playerCode}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -264,7 +275,7 @@ export default function GameSetup() {
       </div>
 
       {/* ── FIXED FOOTER ── */}
-      <div className="flex-none px-6 py-4 border-t border-[var(--border-custom)] bg-[var(--bg-primary)]/80 backdrop-blur-md safe-padding-bottom">
+      <div className="flex-none px-6 pt-4 pb-8 border-t border-[var(--border-custom)] bg-[var(--bg-primary)]/95 backdrop-blur-md" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
         <button
           onClick={handleStartGame}
           className="flex items-center justify-center gap-2 w-full max-w-md mx-auto py-4 rounded-2xl font-display font-extrabold text-base bg-[var(--accent-mint)] text-[var(--bg-primary)] hover:opacity-90 active:scale-[0.98] transition-all shadow-lg"
