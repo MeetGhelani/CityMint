@@ -1,26 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent-mint: var(--accent-mint);
+  --color-accent-gold: var(--accent-gold);
+  --color-border-custom: var(--border-custom);
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Theme configurations */
+:root, .theme-citymint {
+  --bg-primary: #0A1128;       /* Deep Navy */
+  --bg-secondary: #132247;     /* Soft Royal Navy */
+  --text-primary: #F8FAFC;     /* Off-White */
+  --text-secondary: #94A3B8;   /* Slate Gray */
+  --accent-mint: #10B981;      /* Bright Mint */
+  --accent-gold: #F59E0B;      /* Warm Gold */
+  --border-custom: #1E293B;    /* Dark slate border */
+  --background: #0A1128;
+  --foreground: #F8FAFC;
+}
+
+.theme-light {
+  --bg-primary: #F8FAFC;       /* Off-White */
+  --bg-secondary: #FFFFFF;     /* Pure White */
+  --text-primary: #0F172A;     /* Navy Black */
+  --text-secondary: #64748B;   /* Slate Gray */
+  --accent-mint: #0D9488;      /* Deep Teal */
+  --accent-gold: #D97706;      /* Darker Gold */
+  --border-custom: #E2E8F0;    /* Light Gray Border */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+}
+
+.theme-dark {
+  --bg-primary: #030712;       /* Charcoal Black */
+  --bg-secondary: #111827;     /* Dark Gray */
+  --text-primary: #F9FAFB;     /* Warm White */
+  --text-secondary: #9CA3AF;   /* Neutral Gray */
+  --accent-mint: #3B82F6;      /* Electric Royal Blue */
+  --accent-gold: #F59E0B;      /* Warm Gold */
+  --border-custom: #1F2937;    /* Gray Border */
+  --background: #030712;
+  --foreground: #F9FAFB;
+}
+
+/* Base resets and defaults */
+html, body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  user-select: none; /* Make PWA feel like a native app */
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Safe areas for notched phones */
+.safe-padding-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.safe-padding-top {
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
+/* Micro-animations and highlights */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.scanner-active-border {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-custom);
+  border-radius: 3px;
 }
