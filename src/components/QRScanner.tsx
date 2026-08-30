@@ -116,10 +116,14 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
       </div>
 
       {/* ── CAMERA AREA ── */}
-      <div className="flex-1 relative overflow-hidden bg-black">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-black relative">
 
         {/* Force-override html5-qrcode injected inline styles globally */}
         <style>{`
+          #${SCANNER_ELEMENT_ID} {
+            width: 100% !important;
+            height: 100% !important;
+          }
           #${SCANNER_ELEMENT_ID} div {
             width: 100% !important;
             height: 100% !important;
@@ -130,8 +134,6 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
-            position: absolute !important;
-            inset: 0 !important;
           }
           #${SCANNER_ELEMENT_ID} img,
           #${SCANNER_ELEMENT_ID} button,
@@ -141,47 +143,32 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
           }
         `}</style>
 
-        {/* html5-qrcode target */}
-        <div
-          id={SCANNER_ELEMENT_ID}
-          className="absolute inset-0"
-        />
+        {/* Glowing Camera Portal Container */}
+        <div className="w-72 h-72 rounded-[28px] border-2 border-[var(--accent-mint)] relative overflow-hidden bg-[#0A0B10]/95 shadow-2xl shadow-[var(--accent-mint)]/20 flex items-center justify-center">
+          
+          {/* html5-qrcode target */}
+          <div id={SCANNER_ELEMENT_ID} className="w-full h-full" />
 
-        {/* Darken overlay with a transparent scanning window */}
+          {/* Corner overlay accents inside the portal */}
+          <span className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-[var(--accent-mint)]/80 rounded-tl-md pointer-events-none z-10" />
+          <span className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-[var(--accent-mint)]/80 rounded-tr-md pointer-events-none z-10" />
+          <span className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-[var(--accent-mint)]/80 rounded-bl-md pointer-events-none z-10" />
+          <span className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-[var(--accent-mint)]/80 rounded-br-md pointer-events-none z-10" />
+
+          {/* Floating Laser scan line */}
+          {!cameraError && isReady && (
+            <div className="absolute inset-x-4 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-mint)] to-transparent animate-scan-line pointer-events-none z-10" />
+          )}
+        </div>
+
+        {/* Info text below */}
         {!cameraError && (
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Top dark band */}
-            <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ bottom: 'calc(50% + 130px)' }} />
-            {/* Bottom dark band */}
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ top: 'calc(50% + 130px)' }} />
-            {/* Left dark band */}
-            <div className="absolute left-0 bg-black/60" style={{ top: 'calc(50% - 130px)', bottom: 'calc(50% - 130px)', right: 'calc(50% + 130px)' }} />
-            {/* Right dark band */}
-            <div className="absolute right-0 bg-black/60" style={{ top: 'calc(50% - 130px)', bottom: 'calc(50% - 130px)', left: 'calc(50% + 130px)' }} />
-
-            {/* Scanning frame — corners only */}
-            <div className="absolute" style={{ top: 'calc(50% - 130px)', left: 'calc(50% - 130px)', width: 260, height: 260 }}>
-              {/* Corner brackets */}
-              <span className="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] border-[var(--accent-mint)] rounded-tl-md" />
-              <span className="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] border-[var(--accent-mint)] rounded-tr-md" />
-              <span className="absolute bottom-0 left-0 w-8 h-8 border-b-[3px] border-l-[3px] border-[var(--accent-mint)] rounded-bl-md" />
-              <span className="absolute bottom-0 right-0 w-8 h-8 border-b-[3px] border-r-[3px] border-[var(--accent-mint)] rounded-br-md" />
-
-              {/* Animated scan line */}
-              <div className="absolute inset-x-2 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-mint)] to-transparent animate-scan-line" />
-            </div>
-
-            {/* Instruction text below frame */}
-            <div
-              className="absolute left-0 right-0 flex flex-col items-center gap-1 px-6 text-center"
-              style={{ top: 'calc(50% + 145px)' }}
-            >
-              {isReady ? (
-                <p className="text-sm text-white/70 font-medium">Align QR code inside the frame</p>
-              ) : (
-                <p className="text-sm text-white/50 font-medium">Starting camera…</p>
-              )}
-            </div>
+          <div className="mt-8 text-center px-6">
+            {isReady ? (
+              <p className="text-sm text-white/80 font-medium">Align QR code inside the frame</p>
+            ) : (
+              <p className="text-sm text-white/40 font-medium">Starting camera…</p>
+            )}
           </div>
         )}
 
