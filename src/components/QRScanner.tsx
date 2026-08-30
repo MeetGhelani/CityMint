@@ -65,7 +65,6 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
           { facingMode: 'environment' },
           {
             fps: 10,
-            qrbox: { width: 260, height: 260 },
           },
           handleScan,
           () => {} // ignore per-frame errors silently
