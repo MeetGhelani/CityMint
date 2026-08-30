@@ -30,7 +30,7 @@ export default function GameSetup() {
   const [showScanner, setShowScanner] = useState(false);
   const [scanTargetIndex, setScanTargetIndex] = useState<number | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
-  const [startingBalance, setStartingBalance] = useState<number>(10000);
+  const [startingBalance, setStartingBalance] = useState<number | ''>(10000);
 
   // Setup list initialized with placeholders — colors match QR card page exactly
   const [registeredPlayers, setRegisteredPlayers] = useState<RegisteredPlayer[]>([
@@ -86,7 +86,8 @@ export default function GameSetup() {
       return;
     }
 
-    if (isNaN(startingBalance) || startingBalance <= 0) {
+    const balanceNum = startingBalance === '' ? 0 : Number(startingBalance);
+    if (isNaN(balanceNum) || balanceNum <= 0) {
       setSetupError('Please enter a valid starting balance greater than 0.');
       return;
     }
@@ -99,7 +100,7 @@ export default function GameSetup() {
         playerCode: p.playerCode,
       }));
 
-      const gameState = createGame(gameData, startingBalance);
+      const gameState = createGame(gameData, balanceNum);
 
       // 2. Save Game state locally
       await localSaveGame(gameState);
@@ -255,7 +256,17 @@ export default function GameSetup() {
               <input
                 type="number"
                 value={startingBalance}
-                onChange={(e) => setStartingBalance(Math.max(0, Number(e.target.value)))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setStartingBalance('');
+                  } else {
+                    const num = Number(val);
+                    if (!isNaN(num)) {
+                      setStartingBalance(Math.max(0, num));
+                    }
+                  }
+                }}
                 placeholder="Starting cash..."
                 className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)] text-sm font-semibold"
               />

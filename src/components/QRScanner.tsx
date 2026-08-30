@@ -52,6 +52,12 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
     });
   }, []);
 
+  // Store current scan handler in ref to protect camera lifecycle from parent re-renders
+  const scanHandlerRef = useRef(handleScan);
+  useEffect(() => {
+    scanHandlerRef.current = handleScan;
+  }, [handleScan]);
+
   // Start scanner exactly once
   useEffect(() => {
     let stopped = false;
@@ -66,7 +72,9 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
           {
             fps: 10,
           },
-          handleScan,
+          (decodedText) => {
+            scanHandlerRef.current(decodedText);
+          },
           () => {} // ignore per-frame errors silently
         );
 
@@ -88,7 +96,7 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
         scanner.stop().catch(() => {});
       }
     };
-  }, [handleScan]); // handleScan is stable via useCallback
+  }, []); // Empty dependencies array prevents camera teardowns on render cycles
 
   const toggleAudio = () => {
     audioEnabledRef.current = !audioEnabledRef.current;
