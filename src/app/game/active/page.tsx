@@ -585,6 +585,8 @@ export default function ActiveGame() {
                     <button
                       onClick={() => {
                         if (!game.currentPlayerId) return;
+                        soundEffects.playCashChime();
+                        soundEffects.triggerHapticVibration([40, 60]);
                         const nextState = releaseFromJail(game, game.currentPlayerId, 'PAY');
                         updateGameState(nextState);
                       }}
@@ -695,8 +697,8 @@ export default function ActiveGame() {
                 </p>
               </div>
 
-              {/* 4. 🎛️ Banker Quick Action Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+              {/* 4. 🎛️ Banker Quick Shortcut Actions (Clean 2-Button Grid) */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   onClick={() => {
                     if (!game.currentPlayerId) return;
@@ -704,7 +706,7 @@ export default function ActiveGame() {
                     updateGameState(nextState);
                   }}
                   disabled={currentPlayer?.status !== 'ACTIVE'}
-                  className="py-2.5 px-2 rounded-xl text-xs font-bold bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
+                  className="py-2.5 px-3 rounded-xl text-xs font-bold bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   ⚡ Pass Start (+₹2k)
                 </button>
@@ -716,34 +718,20 @@ export default function ActiveGame() {
                       showToast(`${currentPlayer.name} is already in Jail.`, 'warning');
                       return;
                     }
-                    const nextState = sendToJail(game, game.currentPlayerId);
-                    updateGameState(nextState);
+                    setConfirmModal({
+                      title: 'Send to Jail?',
+                      message: `Are you sure you want to send ${currentPlayer?.name} directly to Jail?`,
+                      onConfirm: () => {
+                        if (!game.currentPlayerId) return;
+                        const nextState = sendToJail(game, game.currentPlayerId);
+                        updateGameState(nextState);
+                      },
+                    });
                   }}
                   disabled={currentPlayer?.status !== 'ACTIVE'}
-                  className="py-2.5 px-2 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
+                  className="py-2.5 px-3 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   🔒 Send to Jail
-                </button>
-
-                <button
-                  onClick={() => {
-                    const unowned = game.properties.find((p) => p.ownerId === null);
-                    if (unowned) {
-                      setAuctionProperty(unowned);
-                    } else {
-                      showToast('All properties are currently owned!', 'warning');
-                    }
-                  }}
-                  className="py-2.5 px-2 rounded-xl text-xs font-bold bg-amber-500/10 border border-amber-500/25 text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-1"
-                >
-                  🔨 Live Auction
-                </button>
-
-                <button
-                  onClick={() => setShowAdminPanel(true)}
-                  className="py-2.5 px-2 rounded-xl text-xs font-bold bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all flex items-center justify-center gap-1"
-                >
-                  💸 Quick Adjust
                 </button>
               </div>
 

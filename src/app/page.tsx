@@ -77,7 +77,7 @@ export default function Home() {
 
   return (
     <InstallGate>
-    <main className="min-h-screen flex flex-col px-6 py-12 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)] relative overflow-y-auto">
+    <main className="h-screen flex flex-col justify-between px-6 py-6 sm:py-8 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)] relative overflow-hidden">
       
       {/* Visual Background Decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -86,106 +86,106 @@ export default function Home() {
       </div>
 
       {/* Header / Brand */}
-      <div className="flex flex-col items-center text-center mt-8 z-10">
+      <div className="flex flex-col items-center text-center z-10 pt-2">
         {/* Board Game Token Logo */}
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[var(--accent-mint)] to-[var(--accent-gold)] p-[3px] shadow-2xl mb-6 relative overflow-hidden">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[var(--accent-mint)] to-[var(--accent-gold)] p-[2.5px] shadow-2xl mb-3 relative overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="/logo.jpg" 
             alt="CityMint Logo" 
-            className="w-full h-full rounded-[21px] object-cover"
+            className="w-full h-full rounded-[14px] object-cover"
           />
         </div>
 
-        <h1 className="text-5xl uppercase mb-2 select-none flex items-center justify-center">
+        <h1 className="text-3xl sm:text-4xl uppercase mb-1 select-none flex items-center justify-center tracking-wider font-extrabold">
           <span className="brand-title-gold-solid">City</span>
           <span className="brand-title-gold-outline ml-1">Mint</span>
         </h1>
-        <p className="text-[var(--text-secondary)] font-semibold tracking-wider uppercase text-xs">
+        <p className="text-[var(--text-secondary)] font-semibold tracking-wider uppercase text-[10px]">
           Own. Build. Prosper.
         </p>
       </div>
 
       {/* Primary Actions */}
-      <div className="flex flex-col gap-4 w-full max-w-sm mx-auto mt-10 mb-8 z-10">
+      <div className="flex flex-col gap-3 w-full max-w-sm mx-auto z-10 my-auto">
         {activeGameId && (
           <Link
             href="/game/active"
-            className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-display font-extrabold text-base bg-[var(--accent-gold)] text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-gold)]/20 hover:opacity-90 active:scale-[0.98] transition-all"
+            className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl font-display font-extrabold text-sm bg-[var(--accent-gold)] text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-gold)]/20 hover:opacity-90 active:scale-[0.98] transition-all"
           >
-            <RotateCcw className="w-5 h-5" />
+            <RotateCcw className="w-4 h-4" />
             Continue Current Game
           </Link>
         )}
 
         <Link
           href="/game/setup"
-          className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-display font-extrabold text-base bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-mint)]/20 hover:opacity-90 active:scale-[0.98] transition-all"
+          className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl font-display font-extrabold text-sm bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-mint)]/20 hover:opacity-90 active:scale-[0.98] transition-all"
         >
-          <Play className="w-5 h-5 fill-current" />
+          <Play className="w-4 h-4 fill-current" />
           New Game Setup
         </Link>
 
-        <div className="grid grid-cols-3 gap-3 mt-2">
+        <div className="grid grid-cols-3 gap-2.5 mt-1">
           <button
             onClick={() => setShowRules(true)}
-            className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
           >
-            <BookOpen className="w-5 h-5 text-[var(--accent-mint)]" />
-            <span className="text-xs font-semibold">Rulebook</span>
+            <BookOpen className="w-4 h-4 text-[var(--accent-mint)]" />
+            <span className="text-[11px] font-semibold">Rulebook</span>
           </button>
 
           <button
             onClick={() => setShowHistory(true)}
-            className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
           >
-            <History className="w-5 h-5 text-[var(--accent-gold)]" />
-            <span className="text-xs font-semibold">History ({historyItems.length})</span>
+            <History className="w-4 h-4 text-[var(--accent-gold)]" />
+            <span className="text-[11px] font-semibold">History ({historyItems.length})</span>
           </button>
 
           <Link
             href="/qr-cards"
-            className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
           >
-            <QrCode className="w-5 h-5 text-purple-400" />
-            <span className="text-xs font-semibold">QR Cards</span>
+            <QrCode className="w-4 h-4 text-purple-400" />
+            <span className="text-[11px] font-semibold">QR Cards</span>
           </Link>
         </div>
       </div>
 
       {/* Brand Feature Highlights */}
-      <div className="w-full max-w-sm mx-auto z-10 mb-6">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--text-muted)] text-center mb-4">
+      <div className="w-full max-w-sm mx-auto z-10 mb-2">
+        <p className="text-[9px] uppercase tracking-widest font-extrabold text-[var(--text-muted)] text-center mb-2">
           Everything you need to run the game
         </p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {[
-            { icon: '🏦', label: 'Smart Banker', sub: 'Auto rent & buy logic' },
-            { icon: '📱', label: 'QR Scanning', sub: 'Instant card detection' },
-            { icon: '⚡', label: 'Offline First', sub: 'No internet needed' },
+            { icon: '🏦', label: 'Smart Banker', sub: 'Auto rent & buy' },
+            { icon: '📱', label: 'QR Scanning', sub: 'Instant cards' },
+            { icon: '⚡', label: 'Offline First', sub: 'No internet' },
           ].map((feat) => (
             <div
               key={feat.label}
-              className="flex flex-col items-center text-center p-3 rounded-2xl border border-[var(--border-custom)] bg-[var(--bg-secondary)]/60"
+              className="flex flex-col items-center text-center p-2 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)]/60"
             >
-              <span className="text-xl mb-2">{feat.icon}</span>
-              <p className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{feat.label}</p>
-              <p className="text-[9px] text-[var(--text-muted)] mt-0.5 leading-tight">{feat.sub}</p>
+              <span className="text-base mb-1">{feat.icon}</span>
+              <p className="text-[9px] font-bold text-[var(--text-primary)] leading-tight">{feat.label}</p>
+              <p className="text-[8px] text-[var(--text-muted)] mt-0.5 leading-tight">{feat.sub}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Footer / Settings Trigger */}
-      <div className="flex justify-between items-center w-full max-w-sm mx-auto z-10 border-t border-[var(--border-custom)] pt-6 pb-8 mt-auto">
-        <span className="text-xs text-[var(--text-secondary)] font-medium">
-          CityMint Banker PWA Version 1.0
+      <div className="flex justify-between items-center w-full max-w-sm mx-auto z-10 border-t border-[var(--border-custom)] pt-3 pb-1">
+        <span className="text-[10px] text-[var(--text-secondary)] font-medium">
+          CityMint Banker PWA v1.0
         </span>
         <button
           onClick={() => setShowSettings(true)}
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-secondary)] active:bg-[var(--bg-elevated)] transition-all"
+          className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-secondary)] active:bg-[var(--bg-elevated)] transition-all"
         >
-          <Settings className="w-4 h-4 text-[var(--text-primary)]" />
+          <Settings className="w-3.5 h-3.5 text-[var(--text-primary)]" />
         </button>
       </div>
 

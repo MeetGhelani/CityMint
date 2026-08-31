@@ -9,144 +9,109 @@ export interface RuleSection {
 export const RULEBOOK_SECTIONS: RuleSection[] = [
   {
     id: 'intro',
-    title: 'What is CityMint?',
+    title: '1. What is CityMint?',
     category: 'Getting Started',
-    summary: 'Introduction to CityMint smart hybrid board game.',
+    summary: 'Introduction to the smart hybrid board game.',
     content: [
-      'CityMint is a modern property trading board game combining physical components (board, tokens, dice, cards) with a digital companion app.',
-      'One mobile device acts as the CityMint Banker, keeping track of money, ownership, property levels, rent calculations, and game history.',
-      'Players do NOT need their own phones or accounts. They scan physical card QRs on the Banker device to perform actions.'
+      'Step 1: CityMint combines a physical square board game with a single digital Banker web app.',
+      'Step 2: One phone or tablet acts as the digital Banker to automatically track cash, property ownership, rent levels, and match history.',
+      'Step 3: Players do NOT need individual app accounts — the banker scans physical card QR codes on their behalf.',
+      'Step 4: Roll physical dice, move physical tokens on the board, and let the Banker app handle all calculations.'
     ]
   },
   {
     id: 'setup',
-    title: 'Game Setup',
+    title: '2. Game Setup & Registration',
     category: 'Getting Started',
-    summary: 'How to register players and configure starting settings.',
+    summary: 'How to register players and start a match.',
     content: [
-      'Choose between 2, 3, or 4 players on the setup screen.',
-      'Scan each player\'s physical Card QR or assign a unique identity code (e.g. CM-PLAYER-1).',
-      'Choose a display name and select an accent color/token for each player.',
-      'Each player starts with a fixed balance of exactly ₹10,000.'
+      'Step 1: Open "New Game Setup" on the Banker app.',
+      'Step 2: Select 2, 3, or 4 players and assign player names and token colors.',
+      'Step 3: Scan each player\'s physical Player QR card to link their digital profile.',
+      'Step 4: Each player starts with ₹1,500 initial cash capital.'
     ]
   },
   {
     id: 'turns',
-    title: 'Taking a Turn',
+    title: '3. Taking Your Turn',
     category: 'Gameplay',
-    summary: 'The standard cycle of a player turn.',
+    summary: 'The standard turn order and banker controls.',
     content: [
-      'Players roll physical dice and move their tokens on the physical board.',
-      'The current player whose turn is shown on the banker screen scans the card or tile they land on.',
-      'Alternatively, select the player manually and scan the property card to trigger the landing action.',
-      'Once all actions (buying, paying rent, drawing cards) are completed, tap "End Turn" to hand over the phone.'
+      'Step 1: Roll physical dice and move your token clockwise on the physical board.',
+      'Step 2: The Banker checks the active turn player shown on screen.',
+      'Step 3: Scan the QR code of the tile or card you land on (Property, Teleport, Start, or Action Card).',
+      'Step 4: Once all transactions are resolved, tap "End Turn" to pass the turn to the next player.'
     ]
   },
   {
     id: 'buying',
-    title: 'Buying Properties',
+    title: '4. Buying Properties & Live Auctions',
     category: 'Properties',
-    summary: 'How to purchase unowned properties on the board.',
+    summary: 'How to buy unowned cities or launch live bidding auctions.',
     content: [
-      'When you land on an unowned property, scan its Property Card QR on the Banker device.',
-      'The screen will display the property\'s name, group, and purchase price.',
-      'If you have sufficient balance, tap "Buy Property" to pay the Bank.',
-      'Ownership will be assigned, and the purchase transaction will be logged.'
+      'Step 1: When landing on an unowned property, scan its Property QR code on the Banker app.',
+      'Step 2: Tap "Buy Property" to purchase it at its base price (e.g. ₹2,600). Cash is debited and ownership assigned.',
+      'Step 3: If you pass on buying at base price, tap "Auction Property 🔨" to launch a 15-second live bidding auction!',
+      'Step 4: All active players bid cash in ₹100 / ₹500 increments. Tapping in the last 3 seconds adds +5s to the clock. High bidder wins the property!'
     ]
   },
   {
     id: 'rent',
-    title: 'Rent & Dynamic Levels',
+    title: '5. Rent, Monopoly Sets & Upgrades',
     category: 'Properties',
-    summary: 'Rent calculations and level multipliers (Level 1-5).',
+    summary: 'Rent calculations, set completion bonuses, and level 1-5 upgrades.',
     content: [
-      'When a player lands on an owned property, they must pay rent to the owner.',
-      'Rent is calculated dynamically: Rent = Base Rent × Level Multiplier.',
-      'Every time a player lands on an owned property, its rent level increases by +1 (up to Level 5).',
-      'Rent multipliers are: L1 = 1.00×, L2 = 1.40×, L3 = 1.80×, L4 = 2.50×, L5 = 3.50×.'
-    ]
-  },
-  {
-    id: 'groups',
-    title: 'Property Groups & Completion',
-    category: 'Properties',
-    summary: 'Group completion checks and level-up bonuses.',
-    content: [
-      'The 22 board properties are divided into 8 colored groups (2 or 3 properties per group).',
-      'When the final unowned property in a group is purchased, the Group Completion Bonus triggers.',
-      'All properties in that group instantly gain +1 level (capped at Level 5).',
-      'Properties do NOT need to be owned by the same player to trigger this bonus.',
-      'The completion bonus triggers only once per group per game.'
+      'Step 1: Landing on an owned property requires paying rent to the owner (Rent = Base Rent × Level Multiplier).',
+      'Step 2: Multipliers: Level 1 = 1.00×, Level 2 = 1.40×, Level 3 = 1.80×, Level 4 = 2.50×, Level 5 (MAX) = 3.50×.',
+      'Step 3: Monopoly Set Bonus: When a SINGLE player owns ALL properties in a color group, all properties in that set automatically upgrade to Level 2 (1.40× rent)!',
+      'Step 4: Property Upgrades: Owners can inspect their property and tap "Upgrade Level" (cost = Base Rent × 5) to manually increase levels up to Level 5.'
     ]
   },
   {
     id: 'jail',
-    title: 'Jail System & Rent Rule',
+    title: '6. Jail Rules & Escaping',
     category: 'Special Spaces',
-    summary: 'Entering jail, escaping, and jail rent restrictions.',
+    summary: 'Entering jail, rent blocks, and auto-bail rules.',
     content: [
-      'A player can enter Jail by landing on the "Go To Jail" board space or via an Action Card.',
-      'While in Jail, the player CANNOT collect rent on any of their owned properties.',
-      'Normal rent collection resumes immediately when the owner is released from Jail.',
-      'To get released, pay ₹500 on your turn or use a "Get Out of Jail Free" Action Card.'
+      'Step 1: You go to Jail by landing on "Go To Jail", scanning a Jail QR, or playing a Police Raid card.',
+      'Step 2: Rent Freeze: Players in Jail CANNOT collect rent from tenants on any of their properties!',
+      'Step 3: Escaping: On your turn, tap "Pay Bail ₹500" or tap "Use Pardon Card" to get released immediately.',
+      'Step 4: Auto-Bail: If you remain in Jail for 3 full turns, the app automatically debits ₹500 bail and releases you.'
     ]
   },
   {
     id: 'teleport',
-    title: 'Teleportation Spaces',
+    title: '7. Teleportation & Start Rewards',
     category: 'Special Spaces',
-    summary: 'Costs and rules for moving between Teleport spaces.',
+    summary: 'Warping across the board and passing Start.',
     content: [
-      'There are exactly 4 Teleport spaces on the board.',
-      'Landing on or scanning a Teleport space prompts the player to pay a fixed ₹500 teleportation fee.',
-      'If the fee is paid, the player selects any destination space on the board and moves their physical token there.',
-      'If cash is below ₹500, teleportation is blocked.'
-    ]
-  },
-  {
-    id: 'start',
-    title: 'Start space',
-    category: 'Special Spaces',
-    summary: 'Passing start and collecting rewards.',
-    content: [
-      'Passing or landing on the START space awards a player a fixed ₹2,000 reward from the Bank.',
-      'Scan the START QR or trigger the action manually on the player asset screen to credit the balance.'
+      'Step 1: Landing on a Teleport space prompts a ₹500 fee. If paid, warp your token to any unowned property or tile on the board.',
+      'Step 2: Passing or landing on START awards a fixed ₹2,000 salary from the Bank.',
+      'Step 3: Tap "⚡ Pass Start (+₹2k)" on the Banker dashboard to credit salary instantly.'
     ]
   },
   {
     id: 'debt',
-    title: 'Debt Settlement & Sales',
+    title: '8. Debt Settlement & Selling Properties',
     category: 'Bankruptcy',
-    summary: 'Liquidating properties to cover shortfalls.',
+    summary: 'Handling shortfalls and selling assets.',
     content: [
-      'If a rent payment, tax, or penalty is greater than your cash balance, the game enters Debt Settlement mode.',
-      'The app displays the shortfall and lists eligible properties owned by the debtor.',
-      'Players can sell owned properties to the Bank for half of their total calculated value.',
-      'Once enough properties are sold to cover the debt, the payment is resolved automatically.'
-    ]
-  },
-  {
-    id: 'bankruptcy',
-    title: 'Declaring Bankruptcy',
-    category: 'Bankruptcy',
-    summary: 'Eliminating a player or ending the game.',
-    content: [
-      'If a player cannot satisfy their debt even after selling all properties, they declare Bankruptcy.',
-      'The banker is prompted with two choices:',
-      '1. Remove Player & Continue: The bankrupt player is eliminated, their properties return to unowned L1, and survivors continue.',
-      '2. End Game & Calculate Winner: Immediately end the game. Rankings are calculated based on Net Worth.'
+      'Step 1: If a rent or tax payment exceeds your available cash, the app enters Debt Settlement Mode.',
+      'Step 2: Select properties to sell back to the Bank for half of their total calculated asset value.',
+      'Step 3: If selling properties covers the shortfall, debt resolves and gameplay continues.',
+      'Step 4: If debt cannot be satisfied even after selling all properties, the player declares Bankruptcy and is eliminated.'
     ]
   },
   {
     id: 'winning',
-    title: 'Winning & Valuation',
+    title: '9. Winning the Game',
     category: 'Winning',
-    summary: 'How Net Worth is calculated and champion declaration.',
+    summary: 'Net worth calculations and champion declaration.',
     content: [
-      'When the game is ended, the player with the highest Net Worth is declared the CityMint Champion.',
-      'Net Worth Formula: Net Worth = Cash + Eligible Property Value.',
-      'Property Value = Purchase Price + (Level - 1) * (Base Rent * 5). Upgrading properties increases your net worth!',
-      'The Winner Screen displays final statistics including game duration, total rent paid, and rankings.'
+      'Step 1: The game ends when all competitors go bankrupt or when the banker taps "End Game".',
+      'Step 2: Winner is ranked by Net Worth = Cash + Property Asset Valuations.',
+      'Step 3: Property Valuation = Purchase Price + (Level - 1) × (Base Rent × 5). Upgrading properties increases your net worth!',
+      'Step 4: View the interactive Victory Overlay for Net Worth graphs, MVP Landlord awards, and match highlights.'
     ]
   }
 ];
