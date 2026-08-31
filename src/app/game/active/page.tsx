@@ -533,36 +533,36 @@ export default function ActiveGame() {
             </div>
 
             {/* 2. 💎 Visually Stunning Unified Current Turn & Banker Balance Hero Card */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[var(--bg-secondary)] via-[var(--bg-elevated)] to-[var(--bg-secondary)] border border-[var(--border-custom)] relative overflow-hidden shadow-lg flex items-center justify-between gap-3">
+            <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[var(--bg-secondary)] via-[var(--bg-elevated)] to-[var(--bg-secondary)] border border-[var(--border-custom)] relative overflow-hidden shadow-lg flex items-center justify-between gap-4">
               {/* Subtle Radial Color Glow */}
               <div 
-                className="absolute -left-8 -top-8 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-25" 
+                className="absolute -left-8 -top-8 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-30" 
                 style={{ backgroundColor: currentPlayer?.color || 'var(--accent-mint)' }}
               />
 
               {/* Left: Current Player & Turn Badge */}
-              <div className="flex items-center gap-3 min-w-0 z-10">
+              <div className="flex items-center gap-3.5 min-w-0 z-10">
                 <div className="relative shrink-0">
                   <span 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/20 shadow-md"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/20 shadow-md"
                     style={{ backgroundColor: currentPlayer?.color || 'var(--accent-mint)' }}
                   >
-                    <Landmark className="w-5 h-5 text-white stroke-[2.2]" />
+                    <Landmark className="w-6 h-6 text-white stroke-[2.2]" />
                   </span>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--accent-mint)] border-2 border-[var(--bg-secondary)] animate-pulse" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[var(--accent-mint)] border-2 border-[var(--bg-secondary)] animate-pulse" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[8.5px] uppercase font-extrabold tracking-widest text-[var(--accent-mint)] bg-[var(--accent-mint)]/10 px-1.5 py-0.5 rounded border border-[var(--accent-mint)]/20">
+                    <span className="text-[9px] uppercase font-extrabold tracking-widest text-[var(--accent-mint)] bg-[var(--accent-mint)]/10 px-2 py-0.5 rounded border border-[var(--accent-mint)]/20">
                       Current Turn
                     </span>
                     {currentPlayer?.status === 'IN_JAIL' && (
-                      <span className="text-[8px] font-extrabold uppercase text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">
+                      <span className="text-[8.5px] font-extrabold uppercase text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
                         🔒 In Jail ({currentPlayer.jailTurns}/3)
                       </span>
                     )}
                   </div>
-                  <h2 className="font-display font-extrabold text-base text-[var(--text-primary)] truncate mt-0.5">
+                  <h2 className="font-display font-extrabold text-lg sm:text-xl text-[var(--text-primary)] truncate mt-1">
                     {currentPlayer?.name}
                   </h2>
                 </div>
@@ -570,14 +570,14 @@ export default function ActiveGame() {
 
               {/* Right: Active Banker Balance Display */}
               <div className="text-right shrink-0 z-10">
-                <span className="text-[8.5px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)] block">
+                <span className="text-[9px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)] block">
                   Active Balance
                 </span>
-                <div className="font-display font-black text-2xl text-[var(--text-primary)] tracking-tight leading-none mt-0.5">
+                <div className="font-display font-black text-3xl sm:text-4xl text-[var(--text-primary)] tracking-tight leading-none mt-1">
                   ₹{currentPlayer?.balance.toLocaleString()}
                 </div>
                 {currentPlayer && (
-                  <span className="text-[8.5px] font-bold text-[var(--accent-gold)] mt-1 inline-block bg-[var(--accent-gold)]/10 px-1.5 py-0.2 rounded border border-[var(--accent-gold)]/20">
+                  <span className="text-[9px] font-bold text-[var(--accent-gold)] mt-1.5 inline-block bg-[var(--accent-gold)]/10 px-2 py-0.5 rounded border border-[var(--accent-gold)]/20">
                     NW: ₹{calculateNetWorth(currentPlayer, game.properties).toLocaleString()}
                   </span>
                 )}
@@ -586,7 +586,7 @@ export default function ActiveGame() {
 
             {/* 3. 🔒 Jail Alert Quick Panel (shown only when current player is in jail) */}
             {currentPlayer?.status === 'IN_JAIL' && (
-              <div className="p-3 rounded-2xl bg-red-500/8 border border-red-500/25 space-y-2">
+              <div className="p-3.5 rounded-2xl bg-red-500/8 border border-red-500/25 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[10px] font-extrabold uppercase text-red-400">🔒 Jail Penalty Active</span>
                   <div className="flex gap-1">
@@ -691,87 +691,83 @@ export default function ActiveGame() {
               </div>
             </div>
 
-            {/* 6. 🎛️ Unified Banker Control Panel */}
-            <div className="p-3 sm:p-3.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] space-y-3 shadow-xl mt-2 flex flex-col items-center">
-              
-              {/* Circular Scan QR Button in Center */}
-              <div className="flex flex-col items-center gap-1 py-0.5 mb-3">
-                <button
-                  onClick={() => setShowScanner(true)}
-                  className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center bg-gradient-to-tr from-[var(--accent-mint)] via-emerald-400 to-[var(--accent-mint)] text-[var(--bg-primary)] shadow-xl shadow-[var(--accent-mint)]/25 border-2 border-white/20 active:scale-95 hover:scale-105 transition-all font-display font-black text-[10px] uppercase gap-0.5"
-                >
-                  <Camera className="w-5 h-5 stroke-[2.5]" />
-                  <span>Scan QR</span>
-                </button>
-                <p className="text-[8.5px] text-[var(--text-secondary)] font-medium text-center">
-                  Scan Player, Property, Start, Teleport, or Action QR
-                </p>
-              </div>
+            {/* 6. 📷 Centered Scan QR Action Card */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex flex-col items-center justify-center text-center shadow-lg my-1">
+              <button
+                onClick={() => setShowScanner(true)}
+                className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center bg-gradient-to-tr from-[var(--accent-mint)] via-emerald-400 to-[var(--accent-mint)] text-[var(--bg-primary)] shadow-xl shadow-[var(--accent-mint)]/25 border-2 border-white/20 active:scale-95 hover:scale-105 transition-all font-display font-black text-[10px] uppercase gap-0.5"
+              >
+                <Camera className="w-5 h-5 stroke-[2.5]" />
+                <span>Scan QR</span>
+              </button>
+              <p className="text-[9px] text-[var(--text-secondary)] font-medium mt-2">
+                Scan Player, Property, Start, Teleport, or Action QR
+              </p>
+            </div>
 
-              {/* Quick Shortcut Buttons */}
-              <div className="grid grid-cols-2 gap-2 w-full">
-                <button
-                  onClick={() => {
-                    if (!game.currentPlayerId) return;
-                    const nextState = passStart(game, game.currentPlayerId);
-                    updateGameState(nextState);
-                  }}
-                  disabled={currentPlayer?.status !== 'ACTIVE'}
-                  className="py-2 px-3 rounded-xl text-[11px] font-bold bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
-                >
-                  ⚡ Pass Start (+₹2k)
-                </button>
+            {/* 7. ⚡ Banker Quick Shortcut Actions */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => {
+                  if (!game.currentPlayerId) return;
+                  const nextState = passStart(game, game.currentPlayerId);
+                  updateGameState(nextState);
+                }}
+                disabled={currentPlayer?.status !== 'ACTIVE'}
+                className="py-3 px-3 rounded-xl text-xs font-bold bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                ⚡ Pass Start (+₹2k)
+              </button>
 
-                <button
-                  onClick={() => {
-                    if (!game.currentPlayerId) return;
-                    if (currentPlayer?.status === 'IN_JAIL') {
-                      showToast(`${currentPlayer.name} is already in Jail.`, 'warning');
-                      return;
-                    }
-                    setConfirmModal({
-                      title: 'Send to Jail?',
-                      message: `Are you sure you want to send ${currentPlayer?.name} directly to Jail?`,
-                      onConfirm: () => {
-                        if (!game.currentPlayerId) return;
-                        const nextState = sendToJail(game, game.currentPlayerId);
-                        updateGameState(nextState);
-                      },
-                    });
-                  }}
-                  disabled={currentPlayer?.status !== 'ACTIVE'}
-                  className="py-2 px-3 rounded-xl text-[11px] font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
-                >
-                  🔒 Send to Jail
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  if (!game.currentPlayerId) return;
+                  if (currentPlayer?.status === 'IN_JAIL') {
+                    showToast(`${currentPlayer.name} is already in Jail.`, 'warning');
+                    return;
+                  }
+                  setConfirmModal({
+                    title: 'Send to Jail?',
+                    message: `Are you sure you want to send ${currentPlayer?.name} directly to Jail?`,
+                    onConfirm: () => {
+                      if (!game.currentPlayerId) return;
+                      const nextState = sendToJail(game, game.currentPlayerId);
+                      updateGameState(nextState);
+                    },
+                  });
+                }}
+                disabled={currentPlayer?.status !== 'ACTIVE'}
+                className="py-3 px-3 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                🔒 Send to Jail
+              </button>
+            </div>
 
-              {/* Turn Navigation Controls */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border-custom)]/80 w-full">
-                <button
-                  onClick={handleUndo}
-                  disabled={game.undoStack.length === 0}
-                  className="py-2 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-[11px] font-bold flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Undo
-                </button>
+            {/* 8. 🎛️ Turn Navigation Controls */}
+            <div className="grid grid-cols-3 gap-2.5 border-t border-[var(--border-custom)] pt-3">
+              <button
+                onClick={handleUndo}
+                disabled={game.undoStack.length === 0}
+                className="py-2.5 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Undo
+              </button>
 
-                <button
-                  onClick={() => setShowAdminPanel(true)}
-                  className="py-2 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-[11px] font-bold flex items-center justify-center gap-1"
-                >
-                  Adjust
-                </button>
+              <button
+                onClick={() => setShowAdminPanel(true)}
+                className="py-2.5 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5"
+              >
+                Adjust
+              </button>
 
-                <button
-                  onClick={handleEndTurn}
-                  className="py-2 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] active:scale-95 transition-all text-[11px] font-extrabold flex items-center justify-center gap-1 shadow-md shadow-[var(--accent-mint)]/20"
-                >
-                  End Turn
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              <button
+                onClick={handleEndTurn}
+                className="py-2.5 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] active:scale-95 transition-all text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-[var(--accent-mint)]/20"
+              >
+                End Turn
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
           </div>
