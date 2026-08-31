@@ -67,61 +67,61 @@ export default function QRCardsPage() {
       `}</style>
 
       {/* ── FIXED HEADER ── */}
-      <div className="flex-none flex items-center justify-between px-6 pt-10 pb-4 border-b border-[var(--border-custom)] bg-[var(--bg-primary)]/90 backdrop-blur-md print:hidden z-20">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]">
+      <div className="flex-none flex items-center justify-between px-4 sm:px-6 pt-6 sm:pt-10 pb-3 sm:pb-4 border-b border-[var(--border-custom)] bg-[var(--bg-primary)]/90 backdrop-blur-md print:hidden z-20">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+          <Link href="/" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] shrink-0">
             <ChevronLeft className="w-5 h-5" />
           </Link>
-          <div>
-            <h2 className="font-display font-extrabold text-xl text-[var(--text-primary)]">CityMint QR Cards</h2>
-            <p className="text-xs text-[var(--text-secondary)]">Printable Title Deeds, Banker Cards &amp; Action Codes</p>
+          <div className="min-w-0">
+            <h2 className="font-display font-extrabold text-base sm:text-xl text-[var(--text-primary)] truncate">CityMint QR Cards</h2>
+            <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] truncate">Printable Title Deeds, Banker Cards &amp; Action Codes</p>
           </div>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-sm active:scale-95 transition-all shadow-md">
+        <button onClick={() => window.print()} className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-xs sm:text-sm active:scale-95 transition-all shadow-md shrink-0">
           <Printer className="w-4 h-4" />
-          Print View
+          <span>Print<span className="hidden sm:inline"> View</span></span>
         </button>
       </div>
 
       {/* ── NAVIGATION TABS & FILTER BAR (Screen only) ── */}
-      <div className="flex-none px-6 pt-4 pb-2 border-b border-[var(--border-custom)]/50 bg-[var(--bg-secondary)]/50 print:hidden z-10 space-y-4">
+      <div className="flex-none px-4 sm:px-6 pt-3 sm:pt-4 pb-2 border-b border-[var(--border-custom)]/50 bg-[var(--bg-secondary)]/50 print:hidden z-10 space-y-3 sm:space-y-4">
         
-        {/* Tabs */}
-        <div className="flex items-center gap-2 max-w-xl mx-auto p-1 bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-custom)]">
+        {/* Tabs — Responsive & Scrollable on Mobile */}
+        <div className="flex items-center gap-1.5 sm:gap-2 max-w-xl mx-auto p-1 bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-custom)] overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('properties')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 py-2 sm:py-2.5 px-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
               activeTab === 'properties'
                 ? 'bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <Building className="w-4 h-4" />
-            Properties ({INITIAL_PROPERTIES.length})
+            <Building className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">Properties ({INITIAL_PROPERTIES.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('players')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 min-w-[95px] flex items-center justify-center gap-1.5 py-2 sm:py-2.5 px-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
               activeTab === 'players'
                 ? 'bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <User className="w-4 h-4" />
-            Player Cards ({PLAYER_CARDS.length})
+            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">Players ({PLAYER_CARDS.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('specials')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 min-w-[105px] flex items-center justify-center gap-1.5 py-2 sm:py-2.5 px-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
               activeTab === 'specials'
                 ? 'bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            Special &amp; Actions ({SPECIAL_CARDS.length + ACTION_CARDS.length})
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">Actions ({SPECIAL_CARDS.length + ACTION_CARDS.length})</span>
           </button>
         </div>
 

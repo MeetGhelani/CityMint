@@ -5,26 +5,12 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { Camera, Volume2, VolumeX, AlertCircle, X } from 'lucide-react';
 import { localGetSetting } from '@/lib/db';
 
+import { soundEffects } from '@/lib/soundEffects';
+
 interface QRScannerProps {
   onScan: (decodedText: string) => void;
   onClose: () => void;
   title?: string;
-}
-
-function playBeepSound() {
-  try {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.15);
-  } catch (_) {}
 }
 
 const SCANNER_ELEMENT_ID = 'qr-reader-citymint';
@@ -35,13 +21,26 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
   const audioEnabledRef = useRef(true);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const hasScannedRef = useRef(false);
+  const lastScanTimeRef = useRef(0);
+  const lastScanTextRef = useRef('');
 
-  // Stable scan callback — never changes, so scanner doesn't restart
+  // Stable scan callback with 1.5s duplicate protection cooldown
   const handleScan = useCallback((decodedText: string) => {
-    if (hasScannedRef.current) return; // prevent double-fire
+    const now = Date.now();
+    // Prevent double-fire for same code within 1.5s window
+    if (decodedText === lastScanTextRef.current && now - lastScanTimeRef.current < 1500) {
+      return;
+    }
+
+    if (hasScannedRef.current) return; // prevent multi-firing
     hasScannedRef.current = true;
-    if (audioEnabledRef.current) playBeepSound();
-    if ('vibrate' in navigator) navigator.vibrate(100);
+    lastScanTimeRef.current = now;
+    lastScanTextRef.current = decodedText;
+
+    if (audioEnabledRef.current) {
+      soundEffects.playScanBeep();
+    }
+    soundEffects.triggerHapticVibration([40, 50, 40]);
     onScan(decodedText);
   }, [onScan]);
 

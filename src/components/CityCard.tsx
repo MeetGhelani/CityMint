@@ -6,10 +6,12 @@ import QRCodeImage from '@/components/QRCodeImage';
 interface CityCardProps {
   property: Property;
   ownerName?: string;
-  onClose?: () => void;
+  onClose: () => void;
   onBuy?: () => void;
-  onSell?: () => void;
   onPayRent?: () => void;
+  onSell?: () => void;
+  onAuction?: () => void;
+  onUpgrade?: () => void;
   currentPlayerId?: string | null;
   currentPlayerName?: string;
 }
@@ -22,6 +24,8 @@ export default function CityCard({
   onBuy,
   onSell,
   onPayRent,
+  onAuction,
+  onUpgrade,
   currentPlayerId,
   currentPlayerName,
 }: CityCardProps) {
@@ -35,6 +39,7 @@ export default function CityCard({
   const isOwned = property.ownerId !== null;
   const isOwnerCurrent = currentPlayerId && property.ownerId === currentPlayerId;
   const qrPayload = `CM-PROP-${property.id}`;
+  const upgradeCost = property.baseRent * 5;
 
   return (
     <div className="w-full max-w-sm mx-auto overflow-hidden rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-200">
@@ -180,13 +185,25 @@ export default function CityCard({
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {!isOwned && onBuy && (
-            <button
-              onClick={onBuy}
-              className="w-full py-4 rounded-xl font-display font-bold bg-[var(--accent-mint)] text-[var(--bg-primary)] hover:bg-[var(--accent-mint)]/90 active:scale-[0.98] transition-all text-center shadow-lg"
-            >
-              Buy Property (₹{property.purchasePrice})
-            </button>
+          {!isOwned && (
+            <div className="space-y-2">
+              {onBuy && (
+                <button
+                  onClick={onBuy}
+                  className="w-full py-3.5 rounded-xl font-display font-bold bg-[var(--accent-mint)] text-[var(--bg-primary)] hover:bg-[var(--accent-mint)]/90 active:scale-[0.98] transition-all text-center shadow-lg text-sm"
+                >
+                  Buy Property (₹{property.purchasePrice})
+                </button>
+              )}
+              {onAuction && (
+                <button
+                  onClick={onAuction}
+                  className="w-full py-3 rounded-xl font-display font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 active:scale-[0.98] transition-all text-center text-xs flex items-center justify-center gap-1.5"
+                >
+                  Auction Property 🔨
+                </button>
+              )}
+            </div>
           )}
 
           {isOwned && !isOwnerCurrent && onPayRent && (
@@ -198,17 +215,28 @@ export default function CityCard({
             </button>
           )}
 
-          {isOwned && isOwnerCurrent && onSell && (
-            <button
-              onClick={onSell}
-              className="w-full py-3 rounded-xl font-display font-semibold border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 active:scale-[0.98] transition-all text-center"
-            >
-              Sell Property (Get ₹{Math.floor(getPropertyValue(property) / 2)})
-            </button>
+          {isOwned && isOwnerCurrent && (
+            <div className="space-y-2">
+              {onUpgrade && property.level < 5 && (
+                <button
+                  onClick={onUpgrade}
+                  className="w-full py-3.5 rounded-xl font-display font-bold bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98] transition-all text-center shadow-lg text-sm"
+                >
+                  Upgrade Level ({property.level} → {property.level + 1}) — ₹{upgradeCost}
+                </button>
+              )}
+              {onSell && (
+                <button
+                  onClick={onSell}
+                  className="w-full py-3 rounded-xl font-display font-semibold border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 active:scale-[0.98] transition-all text-center"
+                >
+                  Sell Property (Get ₹{Math.floor(getPropertyValue(property) / 2)})
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
     </div>
   );
 }
-

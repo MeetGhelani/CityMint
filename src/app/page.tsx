@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Play, RotateCcw, BookOpen, Settings, History, QrCode } from 'lucide-react';
 import { localGetSetting, localSaveSetting, localGetHistory, localGetGame } from '@/lib/db';
+import { loadGameStateFromStorage } from '@/lib/gameEngine';
+import { soundEffects } from '@/lib/soundEffects';
 import RulebookSearch from '@/components/RulebookSearch';
 import InstallGate from '@/components/InstallGate';
 
@@ -22,14 +24,27 @@ export default function Home() {
     // Check for active game
     localGetSetting<string | null>('activeGameId', null).then((id) => {
       if (id) {
-        // Double check that the game actually exists in IndexedDB
         localGetGame(id).then((game) => {
           if (game) {
             setActiveGameId(id);
           } else {
-            localSaveSetting('activeGameId', null); // Clean up stale ID
+            // LocalStorage fallback recovery
+            const savedState = loadGameStateFromStorage();
+            if (savedState && savedState.status === 'ACTIVE') {
+              setActiveGameId(savedState.id);
+              localSaveSetting('activeGameId', savedState.id);
+            } else {
+              localSaveSetting('activeGameId', null);
+            }
           }
         });
+      } else {
+        // LocalStorage fallback recovery
+        const savedState = loadGameStateFromStorage();
+        if (savedState && savedState.status === 'ACTIVE') {
+          setActiveGameId(savedState.id);
+          localSaveSetting('activeGameId', savedState.id);
+        }
       }
     });
 
@@ -40,7 +55,10 @@ export default function Home() {
 
     // Load Settings
     localGetSetting<string>('theme', 'theme-citymint').then((t) => setTheme(t));
-    localGetSetting<boolean>('audioEnabled', true).then((a) => setAudioEnabled(a));
+    localGetSetting<boolean>('audioEnabled', true).then((a) => {
+      setAudioEnabled(a);
+      soundEffects.setAudioEnabled(a);
+    });
   }, []);
 
   const handleThemeChange = (newTheme: string) => {
@@ -53,6 +71,7 @@ export default function Home() {
   const handleAudioToggle = () => {
     const nextVal = !audioEnabled;
     setAudioEnabled(nextVal);
+    soundEffects.setAudioEnabled(nextVal);
     localSaveSetting('audioEnabled', nextVal);
   };
 

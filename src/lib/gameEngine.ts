@@ -256,18 +256,51 @@ export function endTurn(state: GameState): GameState {
   const nextIndex = (currentIndex + 1) % activePlayers.length;
   const nextPlayer = activePlayers[nextIndex];
 
-  const updatedPlayers = state.players.map((p) => {
+  // ── Jail Turn Counter & Auto-Release Logic ──
+  // When switching TO a jailed player, increment their jail counter.
+  // If they have already waited 3 full turns, auto-debit ₹500 and release them.
+  let updatedPlayers = state.players.map((p) => {
     if (p.id === nextPlayer.id && p.status === 'IN_JAIL') {
       return { ...p, jailTurns: p.jailTurns + 1 };
     }
     return p;
   });
 
+  let extraTransactions: GameTransaction[] = [];
+
+  const updatedNextPlayer = updatedPlayers.find((p) => p.id === nextPlayer.id);
+  if (updatedNextPlayer && updatedNextPlayer.status === 'IN_JAIL' && updatedNextPlayer.jailTurns >= 3) {
+    // Auto-force release: debit ₹500 (or whatever they have if broke)
+    const bailFee = Math.min(500, updatedNextPlayer.balance);
+    updatedPlayers = updatedPlayers.map((p) => {
+      if (p.id === nextPlayer.id) {
+        return {
+          ...p,
+          status: 'ACTIVE' as const,
+          balance: p.balance - bailFee,
+          jailTurns: 0,
+        };
+      }
+      return p;
+    });
+
+    extraTransactions = [{
+      id: crypto.randomUUID(),
+      turnNumber: state.turnNumber,
+      type: 'JAIL_RELEASE',
+      sourcePlayerId: nextPlayer.id,
+      amount: bailFee,
+      description: `${nextPlayer.name} served 3 jail turns and was auto-released. ₹${bailFee} bail fee deducted.`,
+      createdAt: new Date().toISOString(),
+    }];
+  }
+
   return {
     ...state,
     currentPlayerId: nextPlayer.id,
     turnNumber: state.currentPlayerId === activePlayers[activePlayers.length - 1].id ? state.turnNumber + 1 : state.turnNumber,
     players: updatedPlayers,
+    transactions: extraTransactions.length > 0 ? [...extraTransactions, ...state.transactions] : state.transactions,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -314,17 +347,17 @@ export function purchaseProperty(state: GameState, playerId: string, propertyId:
     createdAt: new Date().toISOString(),
   };
 
-  // Perform Group Bonus Check
+  // Perform Group Bonus Check: All properties in group owned by SAME player
   let updatedCompletedGroups = [...state.completedGroups];
   const group = PROPERTY_GROUPS[property.groupId];
   if (group) {
     const groupProperties = updatedProperties.filter((p) => p.groupId === property.groupId);
-    const allOwned = groupProperties.every((p) => p.ownerId !== null);
+    const allOwnedBySamePlayer = groupProperties.every((p) => p.ownerId === playerId);
     const alreadyCompleted = state.completedGroups.includes(property.groupId);
 
-    if (allOwned && !alreadyCompleted) {
+    if (allOwnedBySamePlayer && !alreadyCompleted) {
       updatedCompletedGroups.push(property.groupId);
-      // Upgrade all properties in group by +1 level (capped at 5)
+      // Automatically upgrade all properties in group from Level 1 to Level 2
       updatedProperties = updatedProperties.map((p) => {
         if (p.groupId === property.groupId) {
           return { ...p, level: Math.min(p.level + 1, 5) };
@@ -1121,6 +1154,434 @@ export function manualCorrectState(
     type: 'MANUAL_CORRECTION',
     amount: 0,
     description: logDesc,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
+    players: updatedPlayers,
+    properties: updatedProperties,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// ── Targeted Action Handlers & LocalStorage Persistence ──
+
+export function executeTargetedPoliceRaid(
+  state: GameState,
+  sourcePlayerId: string,
+  targetPlayerId: string
+): GameState {
+  if (state.status !== 'ACTIVE') return state;
+  const sourcePlayer = state.players.find((p) => p.id === sourcePlayerId);
+  const targetPlayer = state.players.find((p) => p.id === targetPlayerId);
+  if (!sourcePlayer || !targetPlayer || targetPlayer.status !== 'ACTIVE') return state;
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const updatedPlayers = state.players.map((p) =>
+    p.id === targetPlayerId ? { ...p, status: 'IN_JAIL' as const, jailTurns: 0 } : p
+  );
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'ACTION_CARD',
+    sourcePlayerId,
+    targetPlayerId,
+    amount: 0,
+    description: `${sourcePlayer.name} played Police Raid! ${targetPlayer.name} has been sent directly to Jail.`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
+    players: updatedPlayers,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function executeTargetedPropertyUpgrade(
+  state: GameState,
+  playerId: string,
+  propertyId: string
+): GameState {
+  if (state.status !== 'ACTIVE') return state;
+  const player = state.players.find((p) => p.id === playerId);
+  const property = state.properties.find((p) => p.id === propertyId);
+  if (!player || !property || property.ownerId !== playerId || property.level >= 5) return state;
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const updatedProperties = state.properties.map((p) =>
+    p.id === propertyId ? { ...p, level: p.level + 1 } : p
+  );
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'ACTION_CARD',
+    sourcePlayerId: playerId,
+    propertyId,
+    amount: 0,
+    description: `${player.name} played Development Boom, upgrading ${property.cityName} to Level ${property.level + 1} for free!`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
+    properties: updatedProperties,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function executePropertySwap(
+  state: GameState,
+  playerAId: string,
+  propAId: string,
+  playerBId: string,
+  propBId: string
+): GameState {
+  if (state.status !== 'ACTIVE') return state;
+  const pA = state.players.find((p) => p.id === playerAId);
+  const pB = state.players.find((p) => p.id === playerBId);
+  const propA = state.properties.find((p) => p.id === propAId);
+  const propB = state.properties.find((p) => p.id === propBId);
+
+  if (!pA || !pB || !propA || !propB || propA.ownerId !== playerAId || propB.ownerId !== playerBId) {
+    return state;
+  }
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const updatedProperties = state.properties.map((p) => {
+    if (p.id === propAId) return { ...p, ownerId: playerBId };
+    if (p.id === propBId) return { ...p, ownerId: playerAId };
+    return p;
+  });
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'ACTION_CARD',
+    sourcePlayerId: playerAId,
+    targetPlayerId: playerBId,
+    amount: 0,
+    description: `${pA.name} and ${pB.name} swapped properties! (${propA.cityName} ⇆ ${propB.cityName})`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
+    properties: updatedProperties,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+const LOCAL_STORAGE_SAVED_GAME_KEY = 'citymint_active_game_state_v1';
+
+export function saveGameStateToStorage(state: GameState) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(LOCAL_STORAGE_SAVED_GAME_KEY, JSON.stringify(state));
+  } catch (_) {}
+}
+
+export function loadGameStateFromStorage(): GameState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_SAVED_GAME_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (_) {
+    return null;
+  }
+}
+
+export function clearSavedGameState() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_SAVED_GAME_KEY);
+  } catch (_) {}
+}
+
+// ── Match Analytics & Performance Metrics Computation ──
+
+export interface MatchAnalytics {
+  mostValuableLandlord: { player: Player; rentCollected: number } | null;
+  topPerformingProperty: { property: Property; totalRentGenerated: number } | null;
+  mostActiveBuyer: { player: Player; propertiesBought: number } | null;
+  jailbirdAward: { player: Player; jailVisits: number } | null;
+  bigSpender: { player: Player; rentPaid: number } | null;
+  playerStats: Array<{
+    player: Player;
+    rentCollected: number;
+    rentPaid: number;
+    propertiesBought: number;
+    jailVisits: number;
+    finalNetWorth: number;
+  }>;
+  progressionSeries: Array<{
+    turn: number;
+    [playerId: string]: number;
+  }>;
+}
+
+export function computeMatchAnalytics(state: GameState): MatchAnalytics {
+  const rentCollectedMap: Record<string, number> = {};
+  const rentPaidMap: Record<string, number> = {};
+  const propBoughtMap: Record<string, number> = {};
+  const jailVisitsMap: Record<string, number> = {};
+  const propRentMap: Record<string, number> = {};
+
+  // Initialize player maps
+  state.players.forEach((p) => {
+    rentCollectedMap[p.id] = 0;
+    rentPaidMap[p.id] = 0;
+    propBoughtMap[p.id] = 0;
+    jailVisitsMap[p.id] = 0;
+  });
+
+  // Initialize property maps
+  state.properties.forEach((p) => {
+    propRentMap[p.id] = 0;
+  });
+
+  // Process transactions chronologically
+  const txChronological = [...state.transactions].reverse();
+
+  txChronological.forEach((tx) => {
+    if (tx.type === 'RENT') {
+      if (tx.targetPlayerId) {
+        rentCollectedMap[tx.targetPlayerId] = (rentCollectedMap[tx.targetPlayerId] || 0) + tx.amount;
+      }
+      if (tx.sourcePlayerId) {
+        rentPaidMap[tx.sourcePlayerId] = (rentPaidMap[tx.sourcePlayerId] || 0) + tx.amount;
+      }
+      if (tx.propertyId) {
+        propRentMap[tx.propertyId] = (propRentMap[tx.propertyId] || 0) + tx.amount;
+      }
+    } else if (tx.type === 'PURCHASE') {
+      if (tx.sourcePlayerId) {
+        propBoughtMap[tx.sourcePlayerId] = (propBoughtMap[tx.sourcePlayerId] || 0) + 1;
+      }
+    } else if (tx.type === 'JAIL_ENTER') {
+      if (tx.sourcePlayerId) {
+        jailVisitsMap[tx.sourcePlayerId] = (jailVisitsMap[tx.sourcePlayerId] || 0) + 1;
+      }
+    }
+  });
+
+  // Turn Progression Series
+  const maxTurn = Math.max(1, state.turnNumber);
+  const stepCount = Math.min(10, maxTurn);
+  const stepSize = Math.max(1, Math.floor(maxTurn / stepCount));
+  const progressionSeries: Array<{ turn: number; [playerId: string]: number }> = [];
+
+  for (let t = 1; t <= maxTurn; t += stepSize) {
+    const point: { turn: number; [playerId: string]: number } = { turn: t };
+    state.players.forEach((p) => {
+      const playerTx = txChronological.filter((tx) => tx.turnNumber <= t);
+      let balance = 1500; // Starting capital
+      playerTx.forEach((tx) => {
+        if (tx.targetPlayerId === p.id && tx.type === 'RENT') balance += tx.amount;
+        if (tx.sourcePlayerId === p.id && (tx.type === 'RENT' || tx.type === 'PURCHASE' || tx.type === 'TELEPORT')) balance -= tx.amount;
+        if (tx.sourcePlayerId === p.id && tx.type === 'START') balance += 2000;
+      });
+      point[p.id] = Math.max(0, balance);
+    });
+    progressionSeries.push(point);
+  }
+
+  // Find MVPs
+  let topLandlordPlayer: Player | null = null;
+  let maxRentCollected = -1;
+  state.players.forEach((p) => {
+    if ((rentCollectedMap[p.id] || 0) > maxRentCollected) {
+      maxRentCollected = rentCollectedMap[p.id] || 0;
+      topLandlordPlayer = p;
+    }
+  });
+
+  let topProp: Property | null = null;
+  let maxPropRent = -1;
+  state.properties.forEach((prop) => {
+    if ((propRentMap[prop.id] || 0) > maxPropRent && (propRentMap[prop.id] || 0) > 0) {
+      maxPropRent = propRentMap[prop.id] || 0;
+      topProp = prop;
+    }
+  });
+
+  let topBuyerPlayer: Player | null = null;
+  let maxBought = -1;
+  state.players.forEach((p) => {
+    if ((propBoughtMap[p.id] || 0) > maxBought) {
+      maxBought = propBoughtMap[p.id] || 0;
+      topBuyerPlayer = p;
+    }
+  });
+
+  let jailbirdPlayer: Player | null = null;
+  let maxJail = -1;
+  state.players.forEach((p) => {
+    if ((jailVisitsMap[p.id] || 0) > maxJail) {
+      maxJail = jailVisitsMap[p.id] || 0;
+      jailbirdPlayer = p;
+    }
+  });
+
+  let bigSpenderPlayer: Player | null = null;
+  let maxSpenderPaid = -1;
+  state.players.forEach((p) => {
+    if ((rentPaidMap[p.id] || 0) > maxSpenderPaid) {
+      maxSpenderPaid = rentPaidMap[p.id] || 0;
+      bigSpenderPlayer = p;
+    }
+  });
+
+  const playerStats = state.players.map((p) => ({
+    player: p,
+    rentCollected: rentCollectedMap[p.id] || 0,
+    rentPaid: rentPaidMap[p.id] || 0,
+    propertiesBought: propBoughtMap[p.id] || 0,
+    jailVisits: jailVisitsMap[p.id] || 0,
+    finalNetWorth: calculateNetWorth(p, state.properties),
+  }));
+
+  return {
+    mostValuableLandlord: topLandlordPlayer && maxRentCollected > 0 ? { player: topLandlordPlayer, rentCollected: maxRentCollected } : null,
+    topPerformingProperty: topProp && maxPropRent > 0 ? { property: topProp, totalRentGenerated: maxPropRent } : null,
+    mostActiveBuyer: topBuyerPlayer && maxBought > 0 ? { player: topBuyerPlayer, propertiesBought: maxBought } : null,
+    jailbirdAward: jailbirdPlayer && maxJail > 0 ? { player: jailbirdPlayer, jailVisits: maxJail } : null,
+    bigSpender: bigSpenderPlayer && maxSpenderPaid > 0 ? { player: bigSpenderPlayer, rentPaid: maxSpenderPaid } : null,
+    playerStats,
+    progressionSeries,
+  };
+}
+
+// ── Property Auction Resolution ──
+
+export function executeAuctionWin(
+  state: GameState,
+  propertyId: string,
+  winningPlayerId: string,
+  winningBidAmount: number
+): GameState {
+  if (state.status !== 'ACTIVE') return state;
+
+  const player = state.players.find((p) => p.id === winningPlayerId);
+  const property = state.properties.find((p) => p.id === propertyId);
+
+  if (!player || !property || property.ownerId !== null || player.balance < winningBidAmount) {
+    return state;
+  }
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const updatedPlayers = state.players.map((p) => {
+    if (p.id === winningPlayerId) {
+      return { ...p, balance: p.balance - winningBidAmount };
+    }
+    return p;
+  });
+
+  let updatedProperties = state.properties.map((p) => {
+    if (p.id === propertyId) {
+      return { ...p, ownerId: winningPlayerId };
+    }
+    return p;
+  });
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'PURCHASE',
+    sourcePlayerId: winningPlayerId,
+    amount: winningBidAmount,
+    propertyId: propertyId,
+    description: `${player.name} won live auction for ${property.cityName} at ₹${winningBidAmount}`,
+    createdAt: new Date().toISOString(),
+  };
+
+  // Perform Group Completion Check: All properties in group owned by SAME player
+  let updatedCompletedGroups = [...state.completedGroups];
+  const group = PROPERTY_GROUPS[property.groupId];
+  if (group) {
+    const groupProperties = updatedProperties.filter((p) => p.groupId === property.groupId);
+    const allOwnedBySamePlayer = groupProperties.every((p) => p.ownerId === winningPlayerId);
+    const alreadyCompleted = state.completedGroups.includes(property.groupId);
+
+    if (allOwnedBySamePlayer && !alreadyCompleted) {
+      updatedCompletedGroups.push(property.groupId);
+      updatedProperties = updatedProperties.map((p) => {
+        if (p.groupId === property.groupId) {
+          return { ...p, level: Math.min(p.level + 1, 5) };
+        }
+        return p;
+      });
+    }
+  }
+
+  return {
+    ...state,
+    players: updatedPlayers,
+    properties: updatedProperties,
+    completedGroups: updatedCompletedGroups,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// ── Manual Property Level Upgrade (Development) ──
+
+export function upgradePropertyLevel(state: GameState, playerId: string, propertyId: string): GameState {
+  if (state.status !== 'ACTIVE') return state;
+
+  const player = state.players.find((p) => p.id === playerId);
+  const property = state.properties.find((p) => p.id === propertyId);
+
+  if (!player || !property || property.ownerId !== playerId || property.level >= 5) {
+    return state;
+  }
+
+  const upgradeCost = property.baseRent * 5;
+  if (player.balance < upgradeCost) {
+    return state; // Insufficient cash
+  }
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const updatedPlayers = state.players.map((p) => {
+    if (p.id === playerId) {
+      return { ...p, balance: p.balance - upgradeCost };
+    }
+    return p;
+  });
+
+  const updatedProperties = state.properties.map((p) => {
+    if (p.id === propertyId) {
+      return { ...p, level: p.level + 1 };
+    }
+    return p;
+  });
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'MANUAL_CORRECTION',
+    sourcePlayerId: playerId,
+    amount: upgradeCost,
+    propertyId: propertyId,
+    description: `${player.name} upgraded ${property.cityName} to Level ${property.level + 1} for ₹${upgradeCost}`,
     createdAt: new Date().toISOString(),
   };
 
