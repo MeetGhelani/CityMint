@@ -42,6 +42,7 @@ export default function ActiveGame() {
   const [scannedProperty, setScannedProperty] = useState<Property | null>(null);
   const [scannedPlayer, setScannedPlayer] = useState<Player | null>(null);
   const [auctionProperty, setAuctionProperty] = useState<Property | null>(null);
+  const [inspectPlayerId, setInspectPlayerId] = useState<string | null>(null);
   
   // Action Card Drawing State
   const [drawnActionId, setDrawnActionId] = useState<string | null>(null);
@@ -500,14 +501,14 @@ export default function ActiveGame() {
                     <div
                       key={player.id}
                       onClick={() => {
-                        setAdminSelectedPlayer(player.id);
-                        setShowAdminPanel(true);
+                        setInspectPlayerId(player.id);
                       }}
                       className={`px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-2 ${
                         isCurrent
                           ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)] shadow-sm ring-1 ring-[var(--accent-mint)]/50'
                           : 'bg-[var(--bg-secondary)] border-[var(--border-custom)] opacity-75 hover:opacity-100'
                       }`}
+                      title={`Click to view ${player.name}'s properties & details`}
                     >
                       {/* Properly aligned avatar dot with pulse ring when current */}
                       <div className="relative shrink-0 flex items-center justify-center">
@@ -636,7 +637,7 @@ export default function ActiveGame() {
                       {currentPlayer.name}'s Portfolio ({ownedProps.length})
                     </span>
                     <button
-                      onClick={() => setActiveTab('dashboard')}
+                      onClick={() => setInspectPlayerId(currentPlayer.id)}
                       className="text-[9.5px] font-bold text-[var(--accent-mint)] hover:underline"
                     >
                       View All →
@@ -788,35 +789,61 @@ export default function ActiveGame() {
                 return (
                   <div 
                     key={player.id}
-                    className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex items-center justify-between"
+                    onClick={() => setInspectPlayerId(player.id)}
+                    className="p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] hover:border-[var(--accent-mint)]/50 transition-all cursor-pointer space-y-3 shadow-md"
                   >
-                    <div className="flex items-center gap-3">
-                      {/* Rank Indicator */}
-                      <span className="font-display font-black text-xl text-[var(--accent-gold)]">
-                        {index + 1}
-                      </span>
-                      <span 
-                        className="w-4 h-4 rounded-full border border-white/20"
-                        style={{ backgroundColor: player.color }}
-                      />
-                      <div>
-                        <h4 className="font-display font-bold text-base text-[var(--text-primary)]">
-                          {player.name}
-                        </h4>
-                        <div className="flex gap-2 text-[10px] text-[var(--text-secondary)] mt-0.5">
-                          <span>Cash: ₹{player.balance}</span>
-                          <span>•</span>
-                          <span>Properties: {propsCount}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Rank Indicator */}
+                        <span className="font-display font-black text-xl text-[var(--accent-gold)] w-6 text-center">
+                          #{index + 1}
+                        </span>
+                        <span 
+                          className="w-4 h-4 rounded-full border border-white/20 shrink-0"
+                          style={{ backgroundColor: player.color }}
+                        />
+                        <div className="min-w-0">
+                          <h4 className="font-display font-bold text-base text-[var(--text-primary)] truncate">
+                            {player.name}
+                          </h4>
+                          <div className="flex gap-2 text-[10px] text-[var(--text-secondary)] mt-0.5">
+                            <span>Cash: ₹{player.balance.toLocaleString()}</span>
+                            <span>•</span>
+                            <span>Properties: {propsCount}</span>
+                          </div>
                         </div>
                       </div>
+                      
+                      <div className="text-right shrink-0">
+                        <p className="text-[9px] font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">Net Worth</p>
+                        <p className="font-display font-extrabold text-base text-[var(--accent-gold)] mt-0.5">
+                          ₹{worth.toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">Net Worth</p>
-                      <p className="font-display font-extrabold text-lg text-[var(--text-primary)] mt-0.5">
-                        ₹{worth.toLocaleString()}
-                      </p>
-                    </div>
+
+                    {/* Property badges preview */}
+                    {(() => {
+                      const owned = game.properties.filter((p) => p.ownerId === player.id);
+                      if (owned.length === 0) return null;
+
+                      return (
+                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[var(--border-custom)]/50">
+                          {owned.map((prop) => {
+                            const group = PROPERTY_GROUPS[prop.groupId];
+                            return (
+                              <span
+                                key={prop.id}
+                                className="px-2 py-0.5 rounded-lg text-[9px] font-bold text-white shadow-xs"
+                                style={{ backgroundColor: group?.color || '#333' }}
+                              >
+                                {prop.cityName}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -1743,6 +1770,129 @@ export default function ActiveGame() {
                   Start New Match
                 </Link>
               </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── PLAYER PORTFOLIO INSPECTOR DRAWER ── */}
+      {inspectPlayerId && (() => {
+        const targetPlayer = game.players.find((p) => p.id === inspectPlayerId);
+        if (!targetPlayer) return null;
+        const ownedProps = game.properties.filter((p) => p.ownerId === targetPlayer.id);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[85vh] space-y-4 animate-in slide-in-from-bottom-5 duration-200 text-left relative">
+              
+              {/* Close button */}
+              <button
+                onClick={() => setInspectPlayerId(null)}
+                className="absolute right-4 top-4 w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+              >
+                ✕
+              </button>
+
+              {/* Player Header */}
+              <div className="flex items-center gap-3 pr-8">
+                <span 
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/20 shadow-md shrink-0"
+                  style={{ backgroundColor: targetPlayer.color }}
+                >
+                  <Landmark className="w-6 h-6 text-white stroke-[2.2]" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display font-black text-xl text-[var(--text-primary)]">
+                      {targetPlayer.name}
+                    </h3>
+                    {targetPlayer.status === 'IN_JAIL' && (
+                      <span className="text-[9px] font-extrabold uppercase text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
+                        🔒 In Jail
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2.5 text-xs text-[var(--text-secondary)] mt-1 font-semibold">
+                    <span>Cash: <strong className="text-[var(--text-primary)]">₹{targetPlayer.balance.toLocaleString()}</strong></span>
+                    <span>•</span>
+                    <span>Net Worth: <strong className="text-[var(--accent-gold)]">₹{calculateNetWorth(targetPlayer, game.properties).toLocaleString()}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Title Bar */}
+              <div className="flex items-center justify-between border-t border-[var(--border-custom)] pt-3">
+                <span className="text-[10px] uppercase font-extrabold tracking-widest text-[var(--text-secondary)] flex items-center gap-1.5">
+                  <Building className="w-4 h-4 text-[var(--accent-mint)]" />
+                  Owned Properties ({ownedProps.length})
+                </span>
+                <button
+                  onClick={() => {
+                    setAdminSelectedPlayer(targetPlayer.id);
+                    setShowAdminPanel(true);
+                    setInspectPlayerId(null);
+                  }}
+                  className="text-[10px] font-bold text-[var(--accent-mint)] hover:underline cursor-pointer"
+                >
+                  Banker Adjust →
+                </button>
+              </div>
+
+              {/* Property Cards List */}
+              {ownedProps.length === 0 ? (
+                <div className="p-6 text-center rounded-2xl bg-[var(--bg-primary)]/60 border border-dashed border-[var(--border-custom)] space-y-1">
+                  <Building className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-1 opacity-50" />
+                  <p className="font-display font-bold text-sm text-[var(--text-primary)]">{targetPlayer.name} owns 0 properties</p>
+                  <p className="text-xs text-[var(--text-secondary)]">Properties bought during the game will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {ownedProps.map((prop) => {
+                    const group = PROPERTY_GROUPS[prop.groupId];
+                    const isSetComplete = game.completedGroups.includes(prop.groupId);
+                    const rent = getRentAmount(prop, targetPlayer);
+
+                    return (
+                      <div
+                        key={prop.id}
+                        className="p-3.5 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-between gap-3 shadow-sm hover:border-[var(--border-bright)] transition-all"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Color strip accent */}
+                          <span 
+                            className="w-3.5 h-10 rounded-lg shrink-0" 
+                            style={{ backgroundColor: group?.color || '#333' }}
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="font-display font-extrabold text-sm text-[var(--text-primary)] truncate">
+                                {prop.cityName}
+                              </h4>
+                              {isSetComplete && <span title="Monopoly Set Bonus Active (+1 Level)">✨</span>}
+                            </div>
+                            <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                              Level {prop.level} · Rent: <strong className="text-[var(--accent-mint)]">₹{rent.toLocaleString()}</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* View Card Button */}
+                        <button
+                          onClick={() => {
+                            setScannedProperty(prop);
+                            setScanContext('INFO');
+                            setInspectPlayerId(null);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 text-xs font-bold shrink-0 transition-all cursor-pointer"
+                        >
+                          Details
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
             </div>
           </div>
