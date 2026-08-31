@@ -23,6 +23,42 @@ const PLAYER_COLORS = [
   { name: 'Purple', colorCode: '#8B5CF6', hoverClass: 'border-purple-500 bg-purple-500/10' },
 ];
 
+/**
+ * Dynamically extracts a color hex code or color keyword from any scanned player QR code.
+ */
+function extractDynamicColor(code: string): string | null {
+  if (!code) return null;
+  const upper = code.toUpperCase();
+
+  // 1. Direct hex color match (e.g. #3B82F6 or #EF4444)
+  const hexMatch = code.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/);
+  if (hexMatch) return hexMatch[0];
+
+  // 2. Dynamic keyword matching from card code payload
+  const COLOR_MAP: Record<string, string> = {
+    BLUE: '#3B82F6',
+    RED: '#EF4444',
+    GREEN: '#10B981',
+    GOLD: '#F59E0B',
+    YELLOW: '#F59E0B',
+    PURPLE: '#8B5CF6',
+    VIOLET: '#8B5CF6',
+    ORANGE: '#F97316',
+    PINK: '#EC4899',
+    MAGENTA: '#EC4899',
+    CYAN: '#06B6D4',
+    TEAL: '#06B6D4',
+  };
+
+  for (const [key, hex] of Object.entries(COLOR_MAP)) {
+    if (upper.includes(key)) {
+      return hex;
+    }
+  }
+
+  return null;
+}
+
 export default function GameSetup() {
   const router = useRouter();
   const [playerCount, setPlayerCount] = useState<2 | 3 | 4>(3);
@@ -32,12 +68,12 @@ export default function GameSetup() {
   const [setupError, setSetupError] = useState<string | null>(null);
   const [startingBalance, setStartingBalance] = useState<number | ''>(10000);
 
-  // Setup list initialized with placeholders — colors match QR card page exactly
+  // Setup list initialized with placeholders
   const [registeredPlayers, setRegisteredPlayers] = useState<RegisteredPlayer[]>([
-    { name: 'Player 1', color: '#EF4444', playerCode: '', isRegistered: false }, // Red  — CM-P001-RED
-    { name: 'Player 2', color: '#3B82F6', playerCode: '', isRegistered: false }, // Blue — CM-P002-BLUE
-    { name: 'Player 3', color: '#10B981', playerCode: '', isRegistered: false }, // Green — CM-P003-GREEN
-    { name: 'Player 4', color: '#F59E0B', playerCode: '', isRegistered: false }, // Gold — CM-P004-GOLD
+    { name: 'Player 1', color: '#EF4444', playerCode: '', isRegistered: false }, // Placeholder Red
+    { name: 'Player 2', color: '#3B82F6', playerCode: '', isRegistered: false }, // Placeholder Blue
+    { name: 'Player 3', color: '#10B981', playerCode: '', isRegistered: false }, // Placeholder Green
+    { name: 'Player 4', color: '#F59E0B', playerCode: '', isRegistered: false }, // Placeholder Gold
   ]);
 
   const handleUpdatePlayer = (index: number, fields: Partial<RegisteredPlayer>) => {
@@ -67,10 +103,19 @@ export default function GameSetup() {
       return;
     }
 
-    handleUpdatePlayer(scanTargetIndex, {
+    // Dynamically extract card color from scanned payload
+    const dynamicColor = extractDynamicColor(decodedText);
+
+    const updateFields: Partial<RegisteredPlayer> = {
       playerCode: decodedText,
       isRegistered: true,
-    });
+    };
+
+    if (dynamicColor) {
+      updateFields.color = dynamicColor;
+    }
+
+    handleUpdatePlayer(scanTargetIndex, updateFields);
     
     setShowScanner(false);
     setScanTargetIndex(null);
@@ -188,12 +233,16 @@ export default function GameSetup() {
                 >
                   <div className="flex items-center gap-3 justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span
-                        className="w-3.5 h-3.5 rounded-full border border-white/20"
-                        style={{ backgroundColor: player.color }}
-                      />
+                      {/* Color dot only visible after card is scanned */}
+                      {isConfigured && (
+                        <span
+                          className="w-4 h-4 rounded-full border-2 border-white/40 shadow-sm"
+                          style={{ backgroundColor: player.color }}
+                        />
+                      )}
                       <span className="font-display font-bold text-sm text-[var(--text-primary)]">Player {idx + 1}</span>
                     </div>
+
                     {isConfigured && (
                       <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-[var(--accent-mint)]">
                         <CheckCircle className="w-3 h-3" /> Registered

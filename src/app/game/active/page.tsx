@@ -7,7 +7,7 @@ import confetti from 'canvas-confetti';
 import { 
   Camera, RotateCcw, AlertTriangle, ArrowRight, ShieldAlert,
   History, Trophy, Landmark, Info, Search, HeartHandshake,
-  UserCheck, Plus, Minus, Check, CheckSquare, Trash2, HelpCircle, ChevronDown
+  UserCheck, Plus, Minus, Check, CheckSquare, Trash2, HelpCircle, ChevronDown, QrCode
 } from 'lucide-react';
 
 import { 
@@ -393,12 +393,24 @@ export default function ActiveGame() {
           </div>
         </div>
 
-        {/* Sync Indicator */}
-        <div className="flex items-center gap-2 bg-[var(--bg-primary)]/80 px-3 py-1.5 rounded-full border border-[var(--border-custom)]">
-          <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[var(--accent-mint)]' : 'bg-orange-400'}`} />
-          <span className="text-[9px] uppercase tracking-wider font-bold text-[var(--text-primary)]">
-            {isOnline ? (syncing ? 'Syncing...' : 'Synced') : 'Offline'}
-          </span>
+        {/* Header Actions & Sync Indicator */}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/qr-cards"
+            target="_blank"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] border border-[var(--accent-mint)]/30 hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all text-[10px] font-bold uppercase tracking-wider"
+            title="Open Scannable QR Cards Directory"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span>QR Cards</span>
+          </Link>
+
+          <div className="flex items-center gap-2 bg-[var(--bg-primary)]/80 px-3 py-1.5 rounded-full border border-[var(--border-custom)]">
+            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[var(--accent-mint)]' : 'bg-orange-400'}`} />
+            <span className="text-[9px] uppercase tracking-wider font-bold text-[var(--text-primary)]">
+              {isOnline ? (syncing ? 'Syncing...' : 'Synced') : 'Offline'}
+            </span>
+          </div>
         </div>
       </header>
 

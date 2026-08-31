@@ -104,15 +104,15 @@ export const INITIAL_PROPERTIES: Omit<Property, 'level' | 'ownerId'>[] = [
   { id: 'citymint', cityName: 'CityMint', groupId: 'blue', purchasePrice: 8000, baseRent: 800 },
 ];
 
-export const PROPERTY_GROUPS: Record<string, { name: string; color: string; count: number }> = {
-  brown: { name: 'Coastal Gateway', color: '#8B4513', count: 2 },
-  lightblue: { name: 'Historic Heartland', color: '#87CEEB', count: 3 },
-  pink: { name: 'Industrial Hubs', color: '#FF69B4', count: 3 },
-  orange: { name: 'Tech Corridors', color: '#FFA500', count: 3 },
-  red: { name: 'Smart Cities', color: '#FF0000', count: 3 },
-  yellow: { name: 'Metropolises', color: '#FFD700', count: 3 },
-  green: { name: 'Financial Capital', color: '#008000', count: 3 },
-  blue: { name: 'Elite Zone', color: '#0000FF', count: 2 },
+export const PROPERTY_GROUPS: Record<string, { name: string; color: string; gradientFrom: string; gradientTo: string; count: number }> = {
+  brown:     { name: 'Coastal Gateway',   color: '#A0522D', gradientFrom: '#5C280C', gradientTo: '#281005', count: 2 },
+  lightblue: { name: 'Historic Heartland', color: '#38BDF8', gradientFrom: '#0284C7', gradientTo: '#083344', count: 3 },
+  pink:      { name: 'Industrial Hubs',    color: '#F43F5E', gradientFrom: '#BE123C', gradientTo: '#4C0519', count: 3 },
+  orange:    { name: 'Tech Corridors',     color: '#FF6600', gradientFrom: '#D94600', gradientTo: '#571A00', count: 3 },
+  red:       { name: 'Smart Cities',       color: '#EF4444', gradientFrom: '#B91C1C', gradientTo: '#450A0A', count: 3 },
+  yellow:    { name: 'Metropolises',       color: '#EAB308', gradientFrom: '#CA8A04', gradientTo: '#422006', count: 3 },
+  green:     { name: 'Financial Capital',  color: '#10B981', gradientFrom: '#047857', gradientTo: '#022C22', count: 3 },
+  blue:      { name: 'Elite Zone',         color: '#3B82F6', gradientFrom: '#1D4ED8', gradientTo: '#0F172A', count: 2 },
 };
 
 // Rent Multipliers
@@ -134,16 +134,31 @@ export interface ActionCard {
 }
 
 export const ACTION_CARDS: Omit<ActionCard, 'effect'>[] = [
-  { id: 'act-1', name: 'Tax Refund', category: 'Money', description: 'Receive ₹500 from the Bank.' },
-  { id: 'act-2', name: 'Traffic Fine', category: 'Money', description: 'Pay ₹300 fine to the Bank.' },
-  { id: 'act-3', name: 'Birthday Bash', category: 'Money', description: 'Collect ₹200 from each player.' },
-  { id: 'act-4', name: 'Infrastructure Levy', category: 'Property', description: 'Pay ₹150 for each property you own.' },
-  { id: 'act-5', name: 'Speeding Fine', category: 'Jail', description: 'Go directly to Jail.' },
-  { id: 'act-6', name: 'Pardon Card', category: 'Jail', description: 'Get Out of Jail Free (keep this card).' },
-  { id: 'act-7', name: 'Free Transit', category: 'Movement', description: 'Move to any Teleport space for free.' },
-  { id: 'act-8', name: 'Inheritance Reward', category: 'Money', description: 'Receive ₹1,000 from the Bank.' },
-  { id: 'act-9', name: 'Development Boom', category: 'Property', description: 'Upgrade one of your properties by +1 level.' },
-  { id: 'act-10', name: 'Community Feast', category: 'Money', description: 'Pay ₹300 to each player.' },
+  // ── Money ──
+  { id: 'act-1',  name: 'Tax Refund',         category: 'Money',    description: 'Receive ₹500 from the Bank.' },
+  { id: 'act-2',  name: 'Traffic Fine',         category: 'Money',    description: 'Pay ₹300 fine to the Bank.' },
+  { id: 'act-3',  name: 'Birthday Bash',        category: 'Money',    description: 'Collect ₹200 from each player.' },
+  { id: 'act-8',  name: 'Inheritance Reward',   category: 'Money',    description: 'Receive ₹1,000 from the Bank.' },
+  { id: 'act-10', name: 'Community Feast',      category: 'Money',    description: 'Pay ₹300 to each player.' },
+  { id: 'act-11', name: 'Stock Market Crash',   category: 'Money',    description: 'Pay ₹400 fine to the Bank.' },
+  { id: 'act-12', name: 'Startup Bonus',        category: 'Money',    description: 'Receive ₹750 from the Bank.' },
+  { id: 'act-13', name: 'Festival Donations',   category: 'Money',    description: 'Pay ₹100 to each other player.' },
+  { id: 'act-14', name: 'Loan Approved',        category: 'Money',    description: 'Receive ₹600 from the Bank, but pay it back next turn (₹600 auto-deducted at turn end).' },
+  { id: 'act-15', name: 'Dividend Payout',      category: 'Money',    description: 'Receive ₹100 for each property you own.' },
+  // ── Property ──
+  { id: 'act-4',  name: 'Infrastructure Levy',  category: 'Property', description: 'Pay ₹150 for each property you own.' },
+  { id: 'act-9',  name: 'Development Boom',     category: 'Property', description: 'Upgrade one of your properties by +1 level for free.' },
+  { id: 'act-16', name: 'Renovation Collapse',  category: 'Property', description: 'Your highest-level property drops by 1 level.' },
+  // ── Jail ──
+  { id: 'act-5',  name: 'Speeding Fine',        category: 'Jail',     description: 'Go directly to Jail.' },
+  { id: 'act-6',  name: 'Pardon Card',          category: 'Jail',     description: 'Get Out of Jail Free (keep this card).' },
+  { id: 'act-17', name: 'Police Raid',          category: 'Jail',     description: 'Send any one other player directly to Jail.' },
+  // ── Movement ──
+  { id: 'act-7',  name: 'Free Transit',         category: 'Movement', description: 'Move to any Teleport space for free.' },
+  { id: 'act-18', name: 'Road Block',           category: 'Movement', description: 'Skip your next turn (forfeit).' },
+  // ── Special ──
+  { id: 'act-19', name: 'Property Swap',        category: 'Special',  description: 'Swap ownership of one of your properties with any property of another player.' },
+  { id: 'act-20', name: 'Rent Immunity',        category: 'Special',  description: 'You pay no rent this turn if you land on an owned property.' },
 ];
 
 // Helper to push history snapshot to Undo stack
@@ -897,6 +912,95 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
         nextStatus = 'BANKRUPTCY_REVIEW';
         activeDebt = { debtorId: playerId, creditorId: 'BANK', amountDue: feastCost, shortfall: feastCost - player.balance };
       }
+      break;
+
+    case 'act-11': // Stock Market Crash: -400
+      amount = 400;
+      if (player.balance >= 400) {
+        updatedPlayers = state.players.map((p) => (p.id === playerId ? { ...p, balance: p.balance - 400 } : p));
+      } else {
+        nextStatus = 'BANKRUPTCY_REVIEW';
+        activeDebt = { debtorId: playerId, creditorId: 'BANK', amountDue: 400, shortfall: 400 - player.balance };
+      }
+      break;
+
+    case 'act-12': // Startup Bonus: +750
+      amount = 750;
+      updatedPlayers = state.players.map((p) => (p.id === playerId ? { ...p, balance: p.balance + 750 } : p));
+      break;
+
+    case 'act-13': // Festival Donations: pay ₹100 to each other player
+      {
+        const festivalCost = state.players.filter((p) => p.id !== playerId && (p.status === 'ACTIVE' || p.status === 'IN_JAIL')).length * 100;
+        amount = festivalCost;
+        if (player.balance >= festivalCost) {
+          updatedPlayers = state.players.map((p) => {
+            if (p.id === playerId) return { ...p, balance: p.balance - festivalCost };
+            if (p.status === 'ACTIVE' || p.status === 'IN_JAIL') return { ...p, balance: p.balance + 100 };
+            return p;
+          });
+        } else {
+          nextStatus = 'BANKRUPTCY_REVIEW';
+          activeDebt = { debtorId: playerId, creditorId: 'BANK', amountDue: festivalCost, shortfall: festivalCost - player.balance };
+        }
+      }
+      break;
+
+    case 'act-14': // Loan Approved: +600 (simple credit — no auto-deduction implemented, treated as gift)
+      amount = 600;
+      updatedPlayers = state.players.map((p) => (p.id === playerId ? { ...p, balance: p.balance + 600 } : p));
+      description += ' (₹600 credited — repayment via manual adjustment).';
+      break;
+
+    case 'act-15': // Dividend Payout: +100 per property owned
+      {
+        const propCount = state.properties.filter((p) => p.ownerId === playerId).length;
+        amount = propCount * 100;
+        updatedPlayers = state.players.map((p) => (p.id === playerId ? { ...p, balance: p.balance + amount } : p));
+        description += `, receiving ₹${amount} from ${propCount} properties.`;
+      }
+      break;
+
+    case 'act-16': // Renovation Collapse: highest property drops 1 level
+      {
+        const ownedProps = state.properties.filter((p) => p.ownerId === playerId && p.level > 1);
+        if (ownedProps.length > 0) {
+          ownedProps.sort((a, b) => b.level - a.level);
+          const targetProp = ownedProps[0];
+          updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: p.level - 1 } : p));
+          description += `, downgrading ${targetProp.cityName} from Level ${targetProp.level} to Level ${targetProp.level - 1}.`;
+        } else {
+          description += ', but has no properties to downgrade.';
+        }
+      }
+      break;
+
+    case 'act-17': // Police Raid: send another player to jail
+      // Note: In the active game UI, banker selects which player to jail before executing
+      // Here we send the first active non-current player as default
+      {
+        const raidTarget = state.players.find((p) => p.id !== playerId && p.status === 'ACTIVE');
+        if (raidTarget) {
+          updatedPlayers = state.players.map((p) =>
+            p.id === raidTarget.id ? { ...p, status: 'IN_JAIL', jailTurns: 0 } : p
+          );
+          description += `. ${raidTarget.name} has been sent to Jail!`;
+        } else {
+          description += ', but no eligible player to send to Jail.';
+        }
+      }
+      break;
+
+    case 'act-18': // Road Block: forfeit current turn (end turn)
+      description += '. Turn forfeited due to Road Block.';
+      break;
+
+    case 'act-19': // Property Swap: no automatic resolution, banker facilitates
+      description += '. Banker to facilitate: swap one property with another active player.';
+      break;
+
+    case 'act-20': // Rent Immunity: logged only, game UI must check this
+      description += '. Rent Immunity active this turn — no rent payable if landing on owned property.';
       break;
 
     default:
