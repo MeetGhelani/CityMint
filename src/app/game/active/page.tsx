@@ -61,8 +61,7 @@ export default function ActiveGame() {
   const [adminPropLevel, setAdminPropLevel] = useState<number>(1);
 
   // Timer/Duration Tracker
-  const [gameDuration, setGameDuration] = useState(0);
-  const durationTimer = useRef<NodeJS.Timeout | null>(null);
+  const [gameDuration, setGameDuration] = useState<number>(0);
 
   // Custom App Notification / Confirm Dialog States
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'warning' | 'info' } | null>(null);
@@ -99,9 +98,14 @@ export default function ActiveGame() {
           if (gameState) {
             setGame(gameState);
             
-            // Set up duration tracking
-            const elapsed = Math.floor((Date.now() - new Date(gameState.createdAt).getTime()) / 1000);
-            setGameDuration(elapsed > 0 ? elapsed : 0);
+            // Set up duration tracking (uses stored elapsedSeconds if available)
+            const storedSeconds = (gameState as any).elapsedSeconds;
+            if (typeof storedSeconds === 'number') {
+              setGameDuration(storedSeconds);
+            } else {
+              const elapsed = Math.floor((Date.now() - new Date(gameState.createdAt).getTime()) / 1000);
+              setGameDuration(elapsed > 0 ? elapsed : 0);
+            }
           } else {
             router.push('/');
           }
@@ -111,26 +115,35 @@ export default function ActiveGame() {
       }
     });
 
-    // Start timer incrementer
-    durationTimer.current = setInterval(() => {
-      setGameDuration((prev) => prev + 1);
-    }, 1000);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      if (durationTimer.current) clearInterval(durationTimer.current);
     };
   }, [router]);
 
+  // Active Timer Interval
+  useEffect(() => {
+    if (!game || game.status !== 'ACTIVE') return;
+
+    const timer = setInterval(() => {
+      setGameDuration((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [game?.status]);
+
   // Helper to apply engine state modifications, persist, and trigger sync
   const updateGameState = async (nextState: GameState) => {
-    setGame(nextState);
+    const stateWithDuration = {
+      ...nextState,
+      elapsedSeconds: gameDuration,
+    };
+    setGame(stateWithDuration);
     setSyncing(true);
     
     // Save locally to IndexedDB & LocalStorage auto-save
-    await localSaveGame(nextState);
-    saveGameStateToStorage(nextState);
+    await localSaveGame(stateWithDuration);
+    saveGameStateToStorage(stateWithDuration);
 
     // Audio SFX triggers
     const latestTx = nextState.transactions[0];
@@ -433,7 +446,7 @@ export default function ActiveGame() {
     <div className="h-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden">
       
       {/* 1. Header Area */}
-      <header className="px-6 py-4 border-b border-[var(--border-custom)] bg-[var(--bg-secondary)] flex items-center justify-between safe-padding-top select-none">
+      <header className="px-5 sm:px-6 pt-4 sm:pt-5 pb-3.5 border-b border-[var(--border-custom)] bg-[var(--bg-secondary)] flex items-center justify-between safe-padding-top select-none shrink-0">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-display font-extrabold text-sm tracking-wider uppercase text-[var(--text-primary)]">CityMint</h1>
@@ -444,7 +457,7 @@ export default function ActiveGame() {
           <div className="flex items-center gap-2 text-[10px] text-[var(--text-secondary)] font-semibold mt-0.5 uppercase tracking-wide">
             <span>Turn {game.turnNumber}</span>
             <span>•</span>
-            <span>{formatDuration(gameDuration)}</span>
+            <span className="font-mono text-[var(--accent-mint)]">⏱️ {formatDuration(gameDuration)}</span>
           </div>
         </div>
 
@@ -474,231 +487,229 @@ export default function ActiveGame() {
 
         {/* TABS 1: Game Loop Dashboard */}
         {activeTab === 'game' && game.status === 'ACTIVE' && (
-          <div className="h-full flex flex-col justify-between p-4 sm:p-6 overflow-y-auto">
+          <div className="h-full flex flex-col gap-3 p-3.5 sm:p-5 overflow-y-auto no-scrollbar">
             
-            <div>
-              {/* 1. 🏆 Live Multi-Player Scoreboard Strip */}
-              <div className="mb-3 overflow-x-auto no-scrollbar pb-1">
-                <div className="flex items-center gap-2 min-w-max">
-                  {game.players.map((player) => {
-                    const isCurrent = player.id === game.currentPlayerId;
-                    const propsCount = game.properties.filter((p) => p.ownerId === player.id).length;
+            {/* 1. 🏆 Live Multi-Player Scoreboard Strip */}
+            <div className="overflow-x-auto no-scrollbar pb-0.5">
+              <div className="flex items-center gap-2 min-w-max">
+                {game.players.map((player) => {
+                  const isCurrent = player.id === game.currentPlayerId;
+                  const propsCount = game.properties.filter((p) => p.ownerId === player.id).length;
 
-                    return (
-                      <div
-                        key={player.id}
-                        onClick={() => {
-                          setAdminSelectedPlayer(player.id);
-                          setShowAdminPanel(true);
-                        }}
-                        className={`px-3 py-2 rounded-2xl border transition-all cursor-pointer flex items-center gap-2.5 ${
-                          isCurrent
-                            ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)] shadow-md shadow-[var(--accent-mint)]/10 ring-1 ring-[var(--accent-mint)]'
-                            : 'bg-[var(--bg-secondary)] border-[var(--border-custom)] opacity-80 hover:opacity-100'
-                        }`}
-                      >
-                        <span className="w-3 h-3 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: player.color }} />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-display font-extrabold text-xs text-[var(--text-primary)]">{player.name}</span>
-                            {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-mint)] animate-ping" />}
-                            {player.status === 'IN_JAIL' && <span className="text-[9px]">🔒</span>}
-                          </div>
-                          <p className="text-[10px] font-mono text-[var(--text-secondary)]">
-                            ₹{player.balance >= 1000 ? `${(player.balance / 1000).toFixed(1)}k` : player.balance} · 🏢 {propsCount}
-                          </p>
-                        </div>
+                  return (
+                    <div
+                      key={player.id}
+                      onClick={() => {
+                        setAdminSelectedPlayer(player.id);
+                        setShowAdminPanel(true);
+                      }}
+                      className={`px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-2 ${
+                        isCurrent
+                          ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)] shadow-sm ring-1 ring-[var(--accent-mint)]/50'
+                          : 'bg-[var(--bg-secondary)] border-[var(--border-custom)] opacity-75 hover:opacity-100'
+                      }`}
+                    >
+                      {/* Properly aligned avatar dot with pulse ring when current */}
+                      <div className="relative shrink-0 flex items-center justify-center">
+                        <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: player.color }} />
+                        {isCurrent && (
+                          <span className="absolute -inset-1 rounded-full border border-[var(--accent-mint)] animate-pulse pointer-events-none" />
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* Active Turn banner */}
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-display font-extrabold text-[11px] text-[var(--text-primary)]">{player.name}</span>
+                          {player.status === 'IN_JAIL' && <span className="text-[8px]">🔒</span>}
+                        </div>
+                        <p className="text-[9px] font-mono text-[var(--text-secondary)]">
+                          ₹{player.balance >= 1000 ? `${(player.balance / 1000).toFixed(1)}k` : player.balance} · 🏢 {propsCount}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. 💎 Visually Stunning Unified Current Turn & Banker Balance Hero Card */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[var(--bg-secondary)] via-[var(--bg-elevated)] to-[var(--bg-secondary)] border border-[var(--border-custom)] relative overflow-hidden shadow-lg flex items-center justify-between gap-3">
+              {/* Subtle Radial Color Glow */}
               <div 
-                className="p-4 rounded-2xl border flex items-center justify-between transition-all"
-                style={{ 
-                  borderColor: 'var(--border-custom)',
-                  backgroundColor: 'var(--bg-secondary)'
-                }}
-              >
-                <div className="flex items-center gap-3">
+                className="absolute -left-8 -top-8 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-25" 
+                style={{ backgroundColor: currentPlayer?.color || 'var(--accent-mint)' }}
+              />
+
+              {/* Left: Current Player & Turn Badge */}
+              <div className="flex items-center gap-3 min-w-0 z-10">
+                <div className="relative shrink-0">
                   <span 
-                    className="w-5 h-5 rounded-full border border-white/20 animate-pulse"
-                    style={{ backgroundColor: currentPlayer?.color }}
-                  />
-                  <div>
-                    <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)]">Current Turn</p>
-                    <h2 className="font-display font-extrabold text-xl text-[var(--text-primary)]">
-                      {currentPlayer?.name}
-                    </h2>
-                  </div>
+                    className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/20 shadow-md"
+                    style={{ backgroundColor: currentPlayer?.color || 'var(--accent-mint)' }}
+                  >
+                    <Landmark className="w-5 h-5 text-white stroke-[2.2]" />
+                  </span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--accent-mint)] border-2 border-[var(--bg-secondary)] animate-pulse" />
                 </div>
-                {currentPlayer?.status === 'IN_JAIL' && (
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20 flex items-center gap-1">
-                      🔒 In Jail
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[8.5px] uppercase font-extrabold tracking-widest text-[var(--accent-mint)] bg-[var(--accent-mint)]/10 px-1.5 py-0.5 rounded border border-[var(--accent-mint)]/20">
+                      Current Turn
                     </span>
-                    <span className="text-[9px] font-bold text-red-400/80">
-                      Turn {currentPlayer.jailTurns}/3
-                      {currentPlayer.jailTurns >= 2 && ' — Auto-bail next!'}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* ── JAIL ALERT PANEL (only shown when current player is in jail) ── */}
-              {currentPlayer?.status === 'IN_JAIL' && (
-                <div className="mt-3 p-4 rounded-2xl bg-red-500/8 border border-red-500/25 space-y-3">
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] uppercase font-extrabold tracking-widest text-red-400">🔒 Jail Status</p>
-                      <p className="font-display font-bold text-sm text-[var(--text-primary)] mt-0.5">{currentPlayer.name} is in Jail</p>
-                    </div>
-                    {/* Turn Progress Pills */}
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3].map((t) => (
-                        <div
-                          key={t}
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-extrabold border ${
-                            t <= currentPlayer.jailTurns
-                              ? 'bg-red-500 border-red-400 text-white'
-                              : 'bg-[var(--bg-primary)] border-[var(--border-custom)] text-[var(--text-secondary)]'
-                          }`}
-                        >
-                          {t}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Auto-bail warning */}
-                  {currentPlayer.jailTurns >= 2 && (
-                    <div className="px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/30 text-[10px] text-red-400 font-semibold">
-                      ⚠️ After this turn, ₹500 bail fee will be auto-debited and player released.
-                    </div>
-                  )}
-
-                  {/* Quick Jail Actions */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button
-                      onClick={() => {
-                        if (!game.currentPlayerId) return;
-                        soundEffects.playCashChime();
-                        soundEffects.triggerHapticVibration([40, 60]);
-                        const nextState = releaseFromJail(game, game.currentPlayerId, 'PAY');
-                        updateGameState(nextState);
-                      }}
-                      disabled={currentPlayer.balance < 500}
-                      className="py-2.5 rounded-xl text-xs font-bold bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      Pay Bail ₹500
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!game.currentPlayerId) return;
-                        const nextState = releaseFromJail(game, game.currentPlayerId, 'CARD');
-                        updateGameState(nextState);
-                      }}
-                      className="py-2.5 rounded-xl text-xs font-bold bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
-                    >
-                      🃏 Use Pardon Card
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Balance Visual Card */}
-              <div className="my-3 text-center select-none bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-primary)] border border-[var(--border-custom)] p-6 rounded-3xl relative overflow-hidden shadow-xl">
-                <div className="absolute -right-24 -top-24 w-48 h-48 rounded-full bg-white/3 blur-2xl pointer-events-none" />
-                <Landmark className="w-8 h-8 text-[var(--accent-gold)] mx-auto mb-2 opacity-60" />
-                <p className="text-[10px] text-[var(--text-secondary)] font-semibold tracking-wider uppercase">Active Banker Balance</p>
-                <h3 className="font-display font-extrabold text-4xl text-[var(--text-primary)] tracking-tight mt-1 mb-0.5">
-                  ₹{currentPlayer?.balance.toLocaleString()}
-                </h3>
-                {currentPlayer && (
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-                    Total Net Worth: ₹{calculateNetWorth(currentPlayer, game.properties).toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              {/* 2. 🏢 Active Player Portfolio Preview Bar */}
-              {currentPlayer && (() => {
-                const ownedProps = game.properties.filter((p) => p.ownerId === currentPlayer.id);
-                return (
-                  <div className="mb-3 p-3.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-left">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)] flex items-center gap-1">
-                        <Building className="w-3.5 h-3.5 text-[var(--accent-mint)]" />
-                        {currentPlayer.name}'s Portfolio ({ownedProps.length})
+                    {currentPlayer?.status === 'IN_JAIL' && (
+                      <span className="text-[8px] font-extrabold uppercase text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">
+                        🔒 In Jail ({currentPlayer.jailTurns}/3)
                       </span>
-                      <button
-                        onClick={() => setActiveTab('dashboard')}
-                        className="text-[9px] font-bold text-[var(--accent-mint)] hover:underline"
-                      >
-                        View All →
-                      </button>
-                    </div>
-
-                    {ownedProps.length === 0 ? (
-                      <p className="text-[11px] text-[var(--text-muted)] italic">No properties owned yet. Scan property QR to buy!</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {ownedProps.map((prop) => {
-                          const group = PROPERTY_GROUPS[prop.groupId];
-                          const isSetComplete = game.completedGroups.includes(prop.groupId);
-
-                          return (
-                            <div
-                              key={prop.id}
-                              onClick={() => {
-                                setScannedProperty(prop);
-                                setScanContext('INFO');
-                              }}
-                              className="px-2.5 py-1 rounded-xl text-[10px] font-bold text-white flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all"
-                              style={{ backgroundColor: group?.color || '#333' }}
-                            >
-                              <span>{prop.cityName}</span>
-                              <span className="bg-black/30 px-1 py-0.2 rounded text-[8px] font-mono">Lv{prop.level}</span>
-                              {isSetComplete && <span title="Monopoly Set Bonus Active (+1 Level)">✨</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
                     )}
                   </div>
-                );
-              })()}
-
-              {/* 3. ⚡ Live Activity Ticker Bar */}
-              <div className="mb-4 px-3.5 py-2.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex items-center gap-2.5 text-left">
-                <span className="w-2 h-2 rounded-full bg-[var(--accent-mint)] animate-pulse shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] uppercase font-extrabold text-[var(--text-muted)] tracking-wider">Latest Activity</p>
-                  <p className="text-[11px] font-semibold text-[var(--text-primary)] truncate">
-                    {game.transactions[0] ? game.transactions[0].description : 'Match started. Scan any card to play!'}
-                  </p>
+                  <h2 className="font-display font-extrabold text-base text-[var(--text-primary)] truncate mt-0.5">
+                    {currentPlayer?.name}
+                  </h2>
                 </div>
               </div>
 
-              {/* Central Action Trigger */}
-              <div className="flex flex-col items-center gap-2 mb-4">
+              {/* Right: Active Banker Balance Display */}
+              <div className="text-right shrink-0 z-10">
+                <span className="text-[8.5px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)] block">
+                  Active Balance
+                </span>
+                <div className="font-display font-black text-2xl text-[var(--text-primary)] tracking-tight leading-none mt-0.5">
+                  ₹{currentPlayer?.balance.toLocaleString()}
+                </div>
+                {currentPlayer && (
+                  <span className="text-[8.5px] font-bold text-[var(--accent-gold)] mt-1 inline-block bg-[var(--accent-gold)]/10 px-1.5 py-0.2 rounded border border-[var(--accent-gold)]/20">
+                    NW: ₹{calculateNetWorth(currentPlayer, game.properties).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 3. 🔒 Jail Alert Quick Panel (shown only when current player is in jail) */}
+            {currentPlayer?.status === 'IN_JAIL' && (
+              <div className="p-3 rounded-2xl bg-red-500/8 border border-red-500/25 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[10px] font-extrabold uppercase text-red-400">🔒 Jail Penalty Active</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3].map((t) => (
+                      <span key={t} className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-extrabold border ${t <= currentPlayer.jailTurns ? 'bg-red-500 border-red-400 text-white' : 'bg-[var(--bg-primary)] border-[var(--border-custom)] text-[var(--text-secondary)]'}`}>
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      if (!game.currentPlayerId) return;
+                      soundEffects.playCashChime();
+                      soundEffects.triggerHapticVibration([40, 60]);
+                      const nextState = releaseFromJail(game, game.currentPlayerId, 'PAY');
+                      updateGameState(nextState);
+                    }}
+                    disabled={currentPlayer.balance < 500}
+                    className="py-1.5 rounded-xl text-[11px] font-bold bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    Pay Bail ₹500
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!game.currentPlayerId) return;
+                      const nextState = releaseFromJail(game, game.currentPlayerId, 'CARD');
+                      updateGameState(nextState);
+                    }}
+                    className="py-1.5 rounded-xl text-[11px] font-bold bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
+                  >
+                    🃏 Use Pardon Card
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 4. 🏢 Active Player Portfolio Preview Bar */}
+            {currentPlayer && (() => {
+              const ownedProps = game.properties.filter((p) => p.ownerId === currentPlayer.id);
+              return (
+                <div className="p-3 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-left shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9.5px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
+                      <Building className="w-3.5 h-3.5 text-[var(--accent-mint)]" />
+                      {currentPlayer.name}'s Portfolio ({ownedProps.length})
+                    </span>
+                    <button
+                      onClick={() => setActiveTab('dashboard')}
+                      className="text-[9.5px] font-bold text-[var(--accent-mint)] hover:underline"
+                    >
+                      View All →
+                    </button>
+                  </div>
+
+                  {ownedProps.length === 0 ? (
+                    <div className="py-2 px-3 rounded-xl bg-[var(--bg-primary)]/60 border border-dashed border-[var(--border-custom)] flex items-center justify-between gap-2">
+                      <p className="text-[10.5px] text-[var(--text-secondary)] font-medium">
+                        No properties owned yet. Scan property QR to buy!
+                      </p>
+                      <span className="text-[9px] uppercase font-bold text-[var(--accent-gold)] bg-[var(--accent-gold)]/10 px-2 py-0.5 rounded border border-[var(--accent-gold)]/20 shrink-0">
+                        Unowned
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {ownedProps.map((prop) => {
+                        const group = PROPERTY_GROUPS[prop.groupId];
+                        const isSetComplete = game.completedGroups.includes(prop.groupId);
+
+                        return (
+                          <div
+                            key={prop.id}
+                            onClick={() => {
+                              setScannedProperty(prop);
+                              setScanContext('INFO');
+                            }}
+                            className="px-2.5 py-1 rounded-xl text-[9.5px] font-bold text-white flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all"
+                            style={{ backgroundColor: group?.color || '#333' }}
+                          >
+                            <span>{prop.cityName}</span>
+                            <span className="bg-black/30 px-1 py-0.1 rounded text-[7.5px] font-mono">Lv{prop.level}</span>
+                            {isSetComplete && <span title="Monopoly Set Bonus Active (+1 Level)">✨</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* 5. ⚡ Live Activity Ticker Bar */}
+            <div className="px-3.5 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex items-center gap-2 text-left shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-mint)] animate-pulse shrink-0" />
+              <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                <span className="text-[8.5px] uppercase font-extrabold text-[var(--text-muted)] tracking-wider shrink-0">Latest:</span>
+                <p className="text-[10px] font-semibold text-[var(--text-primary)] truncate">
+                  {game.transactions[0] ? game.transactions[0].description : 'Match started. Scan any card to play!'}
+                </p>
+              </div>
+            </div>
+
+            {/* 6. 🎛️ Unified Banker Control Panel */}
+            <div className="p-3 sm:p-3.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] space-y-3 shadow-xl mt-2 flex flex-col items-center">
+              
+              {/* Circular Scan QR Button in Center */}
+              <div className="flex flex-col items-center gap-1 py-0.5 mb-3">
                 <button
                   onClick={() => setShowScanner(true)}
-                  className="w-22 h-22 sm:w-24 sm:h-24 rounded-full flex flex-col items-center justify-center bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-2xl active:scale-95 hover:bg-[var(--accent-mint)]/90 transition-all font-display font-extrabold text-xs uppercase gap-1"
+                  className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center bg-gradient-to-tr from-[var(--accent-mint)] via-emerald-400 to-[var(--accent-mint)] text-[var(--bg-primary)] shadow-xl shadow-[var(--accent-mint)]/25 border-2 border-white/20 active:scale-95 hover:scale-105 transition-all font-display font-black text-[10px] uppercase gap-0.5"
                 >
-                  <Camera className="w-6 h-6 stroke-[2.5]" />
-                  Scan QR
+                  <Camera className="w-5 h-5 stroke-[2.5]" />
+                  <span>Scan QR</span>
                 </button>
-                <p className="text-[10px] text-[var(--text-secondary)] font-medium text-center">
-                  Scan Player, Property, Start, Teleport, or Action Card QR
+                <p className="text-[8.5px] text-[var(--text-secondary)] font-medium text-center">
+                  Scan Player, Property, Start, Teleport, or Action QR
                 </p>
               </div>
 
-              {/* 4. 🎛️ Banker Quick Shortcut Actions (Clean 2-Button Grid) */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
+              {/* Quick Shortcut Buttons */}
+              <div className="grid grid-cols-2 gap-2 w-full">
                 <button
                   onClick={() => {
                     if (!game.currentPlayerId) return;
@@ -706,7 +717,7 @@ export default function ActiveGame() {
                     updateGameState(nextState);
                   }}
                   disabled={currentPlayer?.status !== 'ACTIVE'}
-                  className="py-2.5 px-3 rounded-xl text-xs font-bold bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
+                  className="py-2 px-3 rounded-xl text-[11px] font-bold bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   ⚡ Pass Start (+₹2k)
                 </button>
@@ -729,39 +740,38 @@ export default function ActiveGame() {
                     });
                   }}
                   disabled={currentPlayer?.status !== 'ACTIVE'}
-                  className="py-2.5 px-3 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
+                  className="py-2 px-3 rounded-xl text-[11px] font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   🔒 Send to Jail
                 </button>
               </div>
 
-            </div>
+              {/* Turn Navigation Controls */}
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border-custom)]/80 w-full">
+                <button
+                  onClick={handleUndo}
+                  disabled={game.undoStack.length === 0}
+                  className="py-2 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-[11px] font-bold flex items-center justify-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Undo
+                </button>
 
-            {/* Turn Navigation Toolbar */}
-            <div className="grid grid-cols-3 gap-3 border-t border-[var(--border-custom)] pt-4">
-              <button
-                onClick={handleUndo}
-                disabled={game.undoStack.length === 0}
-                className="py-3 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Undo
-              </button>
+                <button
+                  onClick={() => setShowAdminPanel(true)}
+                  className="py-2 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-[11px] font-bold flex items-center justify-center gap-1"
+                >
+                  Adjust
+                </button>
 
-              <button
-                onClick={() => setShowAdminPanel(true)}
-                className="py-3 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-xs font-bold flex items-center justify-center gap-1.5"
-              >
-                Adjust
-              </button>
-
-              <button
-                onClick={handleEndTurn}
-                className="py-3 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] active:scale-95 transition-all text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md"
-              >
-                End Turn
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                <button
+                  onClick={handleEndTurn}
+                  className="py-2 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] active:scale-95 transition-all text-[11px] font-extrabold flex items-center justify-center gap-1 shadow-md shadow-[var(--accent-mint)]/20"
+                >
+                  End Turn
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
           </div>
@@ -831,8 +841,8 @@ export default function ActiveGame() {
           <div className="h-full overflow-y-auto p-6 space-y-4">
             <div className="flex justify-between items-center mb-2">
               <div>
-                <h3 className="font-display font-extrabold text-lg text-[var(--text-primary)]">Audit History</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Recorded game ledger ({game.transactions.length} events)</p>
+                <h3 className="font-display font-extrabold text-lg text-[var(--text-primary)]">Activity Feed</h3>
+                <p className="text-xs text-[var(--text-secondary)]">Recorded game events ({game.transactions.length} events)</p>
               </div>
               {game.transactions.length > 0 && (
                 <button
@@ -1057,7 +1067,7 @@ export default function ActiveGame() {
           {[
             { id: 'game',         label: 'Play',     icon: Landmark },
             { id: 'dashboard',    label: 'Rankings', icon: Trophy },
-            { id: 'transactions', label: 'Ledger',   icon: History },
+            { id: 'transactions', label: 'Activity', icon: History },
             { id: 'rules',        label: 'Rules',    icon: Search },
           ].map((tab) => {
             const Icon = tab.icon;
