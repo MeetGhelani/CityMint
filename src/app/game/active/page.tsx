@@ -7,7 +7,8 @@ import confetti from 'canvas-confetti';
 import { 
   Camera, RotateCcw, AlertTriangle, ArrowRight, ShieldAlert,
   History, Trophy, Landmark, Info, Search, HeartHandshake,
-  UserCheck, Plus, Minus, Check, CheckSquare, Trash2, HelpCircle, ChevronDown, QrCode, Building
+  UserCheck, Plus, Minus, Check, CheckSquare, Trash2, HelpCircle, ChevronDown, QrCode, Building,
+  Settings, Volume2, VolumeX, RefreshCw
 } from 'lucide-react';
 
 import { 
@@ -49,6 +50,12 @@ export default function ActiveGame() {
   const [showQRCardsModal, setShowQRCardsModal] = useState(false);
   const [qrSearchQuery, setQrSearchQuery] = useState('');
   const [qrActiveTab, setQrActiveTab] = useState<'properties' | 'specials' | 'players'>('properties');
+
+  // In-Game Banker Settings State
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [theme, setTheme] = useState('theme-citymint');
+  const [autoScrollActive, setAutoScrollActive] = useState(true);
   
   // Action Card Drawing State
   const [drawnActionId, setDrawnActionId] = useState<string | null>(null);
@@ -62,7 +69,7 @@ export default function ActiveGame() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminSelectedPlayer, setAdminSelectedPlayer] = useState<string>('');
   const [adminNewName, setAdminNewName] = useState<string>('');
-  const [adminBalanceChange, setAdminBalanceChange] = useState<number>(0);
+  const [adminBalanceChange, setAdminBalanceChange] = useState<number | string>(0);
   const [adminSetJail, setAdminSetJail] = useState<'ACTIVE' | 'IN_JAIL' | ''>('');
   const [adminSelectedProp, setAdminSelectedProp] = useState<string>('');
   const [adminPropOwner, setAdminPropOwner] = useState<string>('');
@@ -77,16 +84,37 @@ export default function ActiveGame() {
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activePlayerCardRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll current turn player's card into view when turn changes
+  // Load Banker Settings
   useEffect(() => {
-    if (game?.currentPlayerId && activePlayerCardRef.current) {
-      activePlayerCardRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
+    localGetSetting<boolean>('audioEnabled', true).then((val) => {
+      setAudioEnabled(val);
+      soundEffects.setAudioEnabled(val);
+    });
+    localGetSetting<string>('theme', 'theme-citymint').then((t) => {
+      setTheme(t);
+      document.body.className = t;
+    });
+  }, []);
+
+  const handleToggleAudio = (val: boolean) => {
+    setAudioEnabled(val);
+    soundEffects.setAudioEnabled(val);
+    localSaveSetting('audioEnabled', val);
+    if (val) soundEffects.playCashChime();
+  };
+
+  const handleSelectTheme = (tName: string) => {
+    setTheme(tName);
+    document.body.className = tName;
+    localSaveSetting('theme', tName);
+  };
+
+  // Auto-scroll active player card on turn change
+  useEffect(() => {
+    if (autoScrollActive && activePlayerCardRef.current) {
+      activePlayerCardRef.current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
-  }, [game?.currentPlayerId]);
+  }, [game?.currentPlayerId, autoScrollActive]);
 
   const showToast = (message: string, type: 'error' | 'warning' | 'info' = 'error', durationMs: number = 3000) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -520,6 +548,17 @@ export default function ActiveGame() {
   };
 
   // Admin panels manual adjustments
+  const closeAdminPanel = () => {
+    setAdminSelectedPlayer('');
+    setAdminNewName('');
+    setAdminBalanceChange(0);
+    setAdminSetJail('');
+    setAdminSelectedProp('');
+    setAdminPropOwner('');
+    setAdminPropLevel(1);
+    setShowAdminPanel(false);
+  };
+
   const handleAdminApply = () => {
     if (!adminSelectedPlayer) {
       showToast('Please select a player to adjust.');
@@ -532,26 +571,21 @@ export default function ActiveGame() {
       return;
     }
 
+    const numBal = typeof adminBalanceChange === 'string' ? (Number(adminBalanceChange) || 0) : adminBalanceChange;
+
     const nextState = manualCorrectState(game, {
       playerId: adminSelectedPlayer,
       nameChange: trimmedName || undefined,
       propertyId: adminSelectedProp || undefined,
-      balanceChange: adminBalanceChange !== 0 ? adminBalanceChange : undefined,
+      balanceChange: numBal !== 0 ? numBal : undefined,
       jailStatusChange: adminSetJail !== '' ? (adminSetJail as any) : undefined,
       ownerIdChange: adminPropOwner !== '' ? (adminPropOwner === 'UNOWNED' ? 'UNOWNED' : adminPropOwner) : undefined,
       levelChange: adminSelectedProp ? adminPropLevel : undefined,
     });
 
     updateGameState(nextState);
-    
-    // Reset admin form
-    setAdminNewName('');
-    setAdminBalanceChange(0);
-    setAdminSetJail('');
-    setAdminSelectedProp('');
-    setAdminPropOwner('');
-    setAdminPropLevel(1);
-    setShowAdminPanel(false);
+    closeAdminPanel();
+    showToast('⚙️ Manual banker adjustment applied!', 'info', 2500);
   };
 
   // Exit game manually
@@ -594,6 +628,14 @@ export default function ActiveGame() {
           >
             <QrCode className="w-3.5 h-3.5" />
             <span>QR Cards</span>
+          </button>
+
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] flex items-center justify-center transition-all cursor-pointer shadow-xs"
+            title="Banker App Settings"
+          >
+            <Settings className="w-4 h-4 text-[var(--accent-mint)]" />
           </button>
 
           <div className="flex items-center gap-2 bg-[var(--bg-primary)]/80 px-3 py-1.5 rounded-full border border-[var(--border-custom)]">
@@ -1575,8 +1617,8 @@ export default function ActiveGame() {
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-display font-extrabold text-xl text-[var(--text-primary)]">Manual Adjustments</h3>
               <button 
-                onClick={() => setShowAdminPanel(false)}
-                className="text-xs font-bold bg-[var(--bg-elevated)] px-3 py-1.5 rounded-full text-[var(--text-secondary)]"
+                onClick={closeAdminPanel}
+                className="text-xs font-bold bg-[var(--bg-elevated)] px-3 py-1.5 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -1622,20 +1664,34 @@ export default function ActiveGame() {
                   <label className="text-[10px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)]">Adjust Balance (₹)</label>
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <button 
-                      onClick={() => setAdminBalanceChange((prev) => prev - 500)}
-                      className="px-2.5 py-2 shrink-0 bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs font-extrabold rounded-xl active:scale-95 hover:bg-[var(--bg-elevated)]"
+                      onClick={() => setAdminBalanceChange((prev) => (Number(prev) || 0) - 500)}
+                      className="px-2.5 py-2 shrink-0 bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs font-extrabold rounded-xl active:scale-95 hover:bg-[var(--bg-elevated)] cursor-pointer"
                     >
                       -500
                     </button>
                     <input
                       type="number"
-                      value={adminBalanceChange}
-                      onChange={(e) => setAdminBalanceChange(Number(e.target.value))}
+                      value={adminBalanceChange === 0 ? '' : adminBalanceChange}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || val === '-') {
+                          setAdminBalanceChange(val);
+                        } else {
+                          const parsed = Number(val);
+                          setAdminBalanceChange(isNaN(parsed) ? 0 : parsed);
+                        }
+                      }}
+                      onFocus={(e) => {
+                        if (adminBalanceChange === 0 || adminBalanceChange === '0') {
+                          e.target.select();
+                        }
+                      }}
+                      placeholder="0"
                       className="w-full min-w-0 flex-1 bg-[var(--bg-primary)] text-center border border-[var(--border-custom)] rounded-xl py-2 px-2 text-sm font-extrabold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
                     />
                     <button 
-                      onClick={() => setAdminBalanceChange((prev) => prev + 500)}
-                      className="px-2.5 py-2 shrink-0 bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs font-extrabold rounded-xl active:scale-95 hover:bg-[var(--bg-elevated)]"
+                      onClick={() => setAdminBalanceChange((prev) => (Number(prev) || 0) + 500)}
+                      className="px-2.5 py-2 shrink-0 bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs font-extrabold rounded-xl active:scale-95 hover:bg-[var(--bg-elevated)] cursor-pointer"
                     >
                       +500
                     </button>
@@ -2449,6 +2505,129 @@ export default function ActiveGame() {
                 Close Directory
               </button>
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── BANKER IN-GAME SETTINGS MODAL ── */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-5 sm:p-6 shadow-2xl space-y-5 animate-in slide-in-from-bottom-5 duration-200 text-left relative">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-[var(--border-custom)]">
+              <h3 className="font-display font-black text-xl text-[var(--text-primary)] flex items-center gap-2">
+                <Settings className="w-5 h-5 text-[var(--accent-mint)]" />
+                Banker Settings
+              </h3>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 1. Audio & Sound FX */}
+            <div className="space-y-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] block">Audio &amp; Sound FX</span>
+              <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {audioEnabled ? <Volume2 className="w-5 h-5 text-[var(--accent-mint)]" /> : <VolumeX className="w-5 h-5 text-red-400" />}
+                  <div>
+                    <h4 className="font-display font-bold text-xs text-[var(--text-primary)]">Game Sound Effects</h4>
+                    <p className="text-[10px] text-[var(--text-secondary)]">Cash chimes, sirens &amp; scan beeps</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleToggleAudio(!audioEnabled)}
+                  className={`w-12 h-6 rounded-full p-1 transition-all cursor-pointer ${
+                    audioEnabled ? 'bg-[var(--accent-mint)]' : 'bg-[var(--bg-elevated)]'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${audioEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              {audioEnabled && (
+                <button
+                  onClick={() => soundEffects.playCashChime()}
+                  className="w-full py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[10px] font-bold text-[var(--accent-mint)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all text-center cursor-pointer"
+                >
+                  🎵 Test Cash Sound Effect
+                </button>
+              )}
+            </div>
+
+            {/* 2. Visual Color Theme */}
+            <div className="space-y-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] block">Visual Color Theme</span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'theme-citymint', label: 'Obsidian Mint', color: '#00E5A0' },
+                  { id: 'theme-dark',     label: 'Cyber Blue',   color: '#4FACFF' },
+                  { id: 'theme-light',    label: 'Clean Light',   color: '#00A67E' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleSelectTheme(t.id)}
+                    className={`p-3 rounded-2xl border flex flex-col items-center gap-2 text-center transition-all cursor-pointer ${
+                      theme === t.id
+                        ? 'border-[var(--accent-mint)] bg-[var(--accent-mint)]/10 shadow-md'
+                        : 'border-[var(--border-custom)] bg-[var(--bg-primary)] hover:border-[var(--text-secondary)]'
+                    }`}
+                  >
+                    <span className="w-5 h-5 rounded-full border border-white/20 shadow-xs" style={{ backgroundColor: t.color }} />
+                    <span className="text-[10px] font-bold text-[var(--text-primary)] leading-tight">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Banker Controls */}
+            <div className="space-y-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] block">Banker Controls</span>
+              
+              <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-between">
+                <div>
+                  <h4 className="font-display font-bold text-xs text-[var(--text-primary)]">Auto-Scroll Active Player</h4>
+                  <p className="text-[10px] text-[var(--text-secondary)]">Focus active card on turn change</p>
+                </div>
+                <button
+                  onClick={() => setAutoScrollActive(!autoScrollActive)}
+                  className={`w-12 h-6 rounded-full p-1 transition-all cursor-pointer ${
+                    autoScrollActive ? 'bg-[var(--accent-mint)]' : 'bg-[var(--bg-elevated)]'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${autoScrollActive ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              {/* Force Cloud Sync */}
+              <button
+                onClick={async () => {
+                  setSyncing(true);
+                  if (game) await syncGameStateToSupabase(game);
+                  await flushSyncQueue();
+                  setSyncing(false);
+                  showToast('⚡ Cloud database sync complete!', 'info');
+                }}
+                className="w-full py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RefreshCw className={`w-4 h-4 text-[var(--accent-mint)] ${syncing ? 'animate-spin' : ''}`} />
+                <span>Force Cloud Database Sync</span>
+              </button>
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSettingsModal(false)}
+              className="w-full py-3 rounded-xl font-display font-bold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] active:scale-95 transition-all text-xs cursor-pointer"
+            >
+              Done &amp; Close Settings
+            </button>
 
           </div>
         </div>
