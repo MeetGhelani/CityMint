@@ -49,7 +49,7 @@ export async function syncGameStateToSupabase(state: GameState): Promise<boolean
     const { error: propertiesErr } = await supabase.from('game_properties').upsert(propertiesData);
     if (propertiesErr) throw propertiesErr;
 
-    // 4. Sync transactions (only the most recent/unsynced ones, or simple upsert for all since list is small)
+    // 4. Sync transactions
     if (state.transactions.length > 0) {
       const txData = state.transactions.map((t) => ({
         id: t.id,
@@ -70,10 +70,11 @@ export async function syncGameStateToSupabase(state: GameState): Promise<boolean
 
     console.log(`[Sync Engine] Successfully synced game ${state.id} to Supabase.`);
     return true;
-  } catch (err) {
-    console.error(`[Sync Engine] Failed to sync game ${state.id}:`, err);
+  } catch (err: any) {
+    const errorMsg = err?.message || err?.details || err?.hint || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+    console.warn(`[Sync Engine] Cloud sync deferred for ${state.id} (offline/unreachable): ${errorMsg}`);
     
-    // Add to sync queue for later retry
+    // Add to sync queue for offline retry
     await localAddToSyncQueue({
       id: crypto.randomUUID(),
       gameId: state.id,
@@ -87,7 +88,7 @@ export async function syncGameStateToSupabase(state: GameState): Promise<boolean
 
 // Background sync worker to flush the queue
 export async function flushSyncQueue(): Promise<void> {
-  if (!isSupabaseConfigured || !supabase || !navigator.onLine) {
+  if (!isSupabaseConfigured || !supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) {
     return;
   }
 
@@ -100,15 +101,15 @@ export async function flushSyncQueue(): Promise<void> {
     try {
       const state = item.payload as GameState;
       
-      // Perform full sync
       const success = await syncGameStateToSupabase(state);
       if (success) {
         await localRemoveFromSyncQueue(item.id);
         console.log(`[Sync Engine] Resolved queue item ${item.id}.`);
       }
-    } catch (err) {
-      console.error(`[Sync Engine] Error processing queue item ${item.id}:`, err);
-      break; // stop processing queue on error to maintain order
+    } catch (err: any) {
+      const errorMsg = err?.message || err?.details || String(err);
+      console.warn(`[Sync Engine] Error processing queue item ${item.id}: ${errorMsg}`);
+      break;
     }
   }
 }

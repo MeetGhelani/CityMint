@@ -237,27 +237,31 @@ export default function ActiveGame() {
 
       const fireSide = (origin: { x: number; y: number }, angle: number) => {
         confetti({
-          particleCount: 80,
+          particleCount: 90,
           angle,
-          spread: 55,
+          spread: 60,
           origin,
           colors,
-          startVelocity: 45,
+          startVelocity: 50,
           gravity: 0.9,
-          ticks: 200,
+          ticks: 250,
+          zIndex: 99999,
+          disableForReducedMotion: false,
         });
       };
 
       const fireOverhead = () => {
         confetti({
-          particleCount: 120,
-          spread: 100,
-          origin: { x: 0.5, y: 0.3 },
+          particleCount: 150,
+          spread: 120,
+          origin: { x: 0.5, y: 0.25 },
           colors,
-          startVelocity: 30,
-          gravity: 1,
-          ticks: 250,
-          scalar: 1.2,
+          startVelocity: 35,
+          gravity: 0.95,
+          ticks: 300,
+          scalar: 1.25,
+          zIndex: 99999,
+          disableForReducedMotion: false,
         });
       };
 
@@ -628,14 +632,6 @@ export default function ActiveGame() {
           >
             <QrCode className="w-3.5 h-3.5" />
             <span>QR Cards</span>
-          </button>
-
-          <button
-            onClick={() => setShowSettingsModal(true)}
-            className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] flex items-center justify-center transition-all cursor-pointer shadow-xs"
-            title="Banker App Settings"
-          >
-            <Settings className="w-4 h-4 text-[var(--accent-mint)]" />
           </button>
 
           <div className="flex items-center gap-2 bg-[var(--bg-primary)]/80 px-3 py-1.5 rounded-full border border-[var(--border-custom)]">
@@ -1300,30 +1296,38 @@ export default function ActiveGame() {
 
       </div>
 
-      {/* 3. Bottom Navigation Bar — always fixed at bottom */}
+      {/* 3. Bottom Navigation Bar — Modern 5-Option Bar */}
       {game.status === 'ACTIVE' && (
-        <nav className="flex-none border-t border-[var(--border-custom)] bg-[var(--bg-secondary)] grid grid-cols-4 select-none safe-padding-bottom">
+        <nav className="flex-none border-t border-[var(--border-custom)] bg-[var(--bg-secondary)]/90 backdrop-blur-md grid grid-cols-5 select-none safe-padding-bottom z-30">
           {[
             { id: 'game',         label: 'Play',     icon: Landmark },
             { id: 'dashboard',    label: 'Rankings', icon: Trophy },
             { id: 'transactions', label: 'Activity', icon: History },
             { id: 'rules',        label: 'Rules',    icon: Search },
+            { id: 'settings',     label: 'Settings', icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
-            const isSelected = activeTab === tab.id;
+            const isSelected = tab.id === 'settings' ? showSettingsModal : (activeTab === tab.id && !showSettingsModal);
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`py-3 flex flex-col items-center gap-1 transition-all relative ${
-                  isSelected ? 'text-[var(--accent-mint)]' : 'text-[var(--text-secondary)]'
+                onClick={() => {
+                  if (tab.id === 'settings') {
+                    setShowSettingsModal(true);
+                  } else {
+                    setShowSettingsModal(false);
+                    setActiveTab(tab.id as any);
+                  }
+                }}
+                className={`py-2.5 flex flex-col items-center gap-1 transition-all relative cursor-pointer active:scale-95 ${
+                  isSelected ? 'text-[var(--accent-mint)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 {isSelected && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-full bg-[var(--accent-mint)]" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[var(--accent-mint)] rounded-full shadow-[0_0_8px_var(--accent-mint)]" />
                 )}
                 <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-semibold">{tab.label}</span>
+                <span className="text-[10px] font-extrabold tracking-wide">{tab.label}</span>
               </button>
             );
           })}
@@ -2568,7 +2572,7 @@ export default function ActiveGame() {
                 {[
                   { id: 'theme-citymint', label: 'Obsidian Mint', color: '#00E5A0' },
                   { id: 'theme-dark',     label: 'Cyber Blue',   color: '#4FACFF' },
-                  { id: 'theme-light',    label: 'Clean Light',   color: '#00A67E' },
+                  { id: 'theme-light',    label: 'Clean Light',   color: '#FFFFFF' },
                 ].map((t) => (
                   <button
                     key={t.id}

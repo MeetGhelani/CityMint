@@ -2,7 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Play, RotateCcw, BookOpen, Settings, History, QrCode } from 'lucide-react';
+import { 
+  Play, RotateCcw, BookOpen, Settings, History, QrCode, 
+  Menu, Bell, Crown, ChevronRight, Landmark, Scan, WifiOff, X
+} from 'lucide-react';
 import { localGetSetting, localSaveSetting, localGetHistory, localGetGame } from '@/lib/db';
 import { loadGameStateFromStorage } from '@/lib/gameEngine';
 import { soundEffects } from '@/lib/soundEffects';
@@ -15,6 +18,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
   
   // Settings State
   const [theme, setTheme] = useState('theme-citymint');
@@ -28,7 +32,6 @@ export default function Home() {
           if (game) {
             setActiveGameId(id);
           } else {
-            // LocalStorage fallback recovery
             const savedState = loadGameStateFromStorage();
             if (savedState && savedState.status === 'ACTIVE') {
               setActiveGameId(savedState.id);
@@ -39,7 +42,6 @@ export default function Home() {
           }
         });
       } else {
-        // LocalStorage fallback recovery
         const savedState = loadGameStateFromStorage();
         if (savedState && savedState.status === 'ACTIVE') {
           setActiveGameId(savedState.id);
@@ -77,241 +79,357 @@ export default function Home() {
 
   return (
     <InstallGate>
-    <main className="h-screen flex flex-col justify-between px-6 py-6 sm:py-8 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)] relative overflow-hidden">
-      
-      {/* Visual Background Decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-[var(--accent-mint)]/5 blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-[var(--accent-gold)]/5 blur-3xl" />
-      </div>
-
-      {/* Header / Brand */}
-      <div className="flex flex-col items-center text-center z-10 pt-2">
-        {/* Board Game Token Logo */}
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[var(--accent-mint)] to-[var(--accent-gold)] p-[2.5px] shadow-2xl mb-3 relative overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="/logo.jpg" 
-            alt="CityMint Logo" 
-            className="w-full h-full rounded-[14px] object-cover"
-          />
+      <main className="min-h-screen flex flex-col justify-between px-4 sm:px-6 py-4 sm:py-6 bg-[#07090E] text-white relative overflow-hidden font-sans select-none">
+        
+        {/* Visual Skyline Glow Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-gradient-to-b from-cyan-500/10 via-emerald-500/5 to-transparent blur-3xl rounded-full" />
+          <div className="absolute top-1/4 -right-32 w-80 h-80 bg-amber-500/5 blur-3xl rounded-full" />
+          <div className="absolute bottom-10 -left-32 w-80 h-80 bg-purple-500/5 blur-3xl rounded-full" />
         </div>
 
-        <h1 className="text-3xl sm:text-4xl uppercase mb-1 select-none flex items-center justify-center tracking-wider font-extrabold">
-          <span className="brand-title-gold-solid">City</span>
-          <span className="brand-title-gold-outline ml-1">Mint</span>
-        </h1>
-        <p className="text-[var(--text-secondary)] font-semibold tracking-wider uppercase text-[10px]">
-          Own. Build. Prosper.
-        </p>
-      </div>
 
-      {/* Primary Actions */}
-      <div className="flex flex-col gap-3 w-full max-w-sm mx-auto z-10 my-auto">
-        {activeGameId && (
-          <Link
-            href="/game/active"
-            className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl font-display font-extrabold text-sm bg-[var(--accent-gold)] text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-gold)]/20 hover:opacity-90 active:scale-[0.98] transition-all"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Continue Current Game
-          </Link>
-        )}
 
-        <Link
-          href="/game/setup"
-          className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl font-display font-extrabold text-sm bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-mint)]/20 hover:opacity-90 active:scale-[0.98] transition-all"
-        >
-          <Play className="w-4 h-4 fill-current" />
-          New Game Setup
-        </Link>
-
-        <div className="grid grid-cols-3 gap-2.5 mt-1">
-          <button
-            onClick={() => setShowRules(true)}
-            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
-          >
-            <BookOpen className="w-4 h-4 text-[var(--accent-mint)]" />
-            <span className="text-[11px] font-semibold">Rulebook</span>
-          </button>
-
-          <button
-            onClick={() => setShowHistory(true)}
-            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
-          >
-            <History className="w-4 h-4 text-[var(--accent-gold)]" />
-            <span className="text-[11px] font-semibold">History ({historyItems.length})</span>
-          </button>
-
-          <Link
-            href="/qr-cards"
-            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 transition-all"
-          >
-            <QrCode className="w-4 h-4 text-purple-400" />
-            <span className="text-[11px] font-semibold">QR Cards</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Brand Feature Highlights */}
-      <div className="w-full max-w-sm mx-auto z-10 mb-2">
-        <p className="text-[9px] uppercase tracking-widest font-extrabold text-[var(--text-muted)] text-center mb-2">
-          Everything you need to run the game
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { icon: '🏦', label: 'Smart Banker', sub: 'Auto rent & buy' },
-            { icon: '📱', label: 'QR Scanning', sub: 'Instant cards' },
-            { icon: '⚡', label: 'Offline First', sub: 'No internet' },
-          ].map((feat) => (
-            <div
-              key={feat.label}
-              className="flex flex-col items-center text-center p-2 rounded-xl border border-[var(--border-custom)] bg-[var(--bg-secondary)]/60"
-            >
-              <span className="text-base mb-1">{feat.icon}</span>
-              <p className="text-[9px] font-bold text-[var(--text-primary)] leading-tight">{feat.label}</p>
-              <p className="text-[8px] text-[var(--text-muted)] mt-0.5 leading-tight">{feat.sub}</p>
+        {/* ── HERO BRAND TITLE & ROUND LOGO ── */}
+        <div className="flex flex-col items-center text-center z-10 pt-3 pb-2 relative">
+          
+          {/* Simple Small Round Logo */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-[2.5px] bg-gradient-to-tr from-amber-400 via-emerald-400 to-cyan-400 shadow-xl shadow-emerald-500/20 mb-3 relative group transition-transform hover:scale-105 cursor-pointer">
+            <div className="w-full h-full rounded-full overflow-hidden bg-[#0A0B10] flex items-center justify-center border border-white/10">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/logo.jpg" 
+                alt="CityMint Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Footer / Settings Trigger */}
-      <div className="flex justify-between items-center w-full max-w-sm mx-auto z-10 border-t border-[var(--border-custom)] pt-3 pb-1">
-        <span className="text-[10px] text-[var(--text-secondary)] font-medium">
-          CityMint Banker PWA v1.0
-        </span>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-secondary)] active:bg-[var(--bg-elevated)] transition-all"
-        >
-          <Settings className="w-3.5 h-3.5 text-[var(--text-primary)]" />
-        </button>
-      </div>
+          {/* Redesigned Modern Typography */}
+          <h1 className="text-4xl sm:text-5xl font-display font-black tracking-widest uppercase select-none mb-1 flex items-center gap-1.5 justify-center">
+            <span className="bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(245,166,35,0.4)]">
+              CITY
+            </span>
+            <span className="bg-gradient-to-br from-emerald-300 via-emerald-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_2px_12px_rgba(0,229,160,0.4)] ml-1">
+              MINT
+            </span>
+          </h1>
 
-      {/* MODAL overlays */}
-
-      {/* Rules Modal */}
-      {showRules && (
-        <div className="fixed inset-0 z-50 bg-[var(--bg-primary)] flex flex-col animate-in slide-in-from-bottom duration-250">
-          <div className="flex-1 overflow-hidden relative">
-            <RulebookSearch onClose={() => setShowRules(false)} />
+          {/* Subtitle Divider */}
+          <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">
+            <span className="w-8 h-[1px] bg-gradient-to-r from-transparent to-amber-500/60" />
+            <span className="text-amber-300/90 font-mono tracking-[0.25em]">OWN. BUILD. PROSPER.</span>
+            <span className="w-8 h-[1px] bg-gradient-to-l from-transparent to-amber-500/60" />
           </div>
         </div>
-      )}
 
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-[var(--bg-secondary)] border border-[var(--border-custom)] rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-250">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-display font-extrabold text-xl text-[var(--text-primary)]">Settings</h3>
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="text-xs font-bold bg-[var(--bg-elevated)] px-3 py-1.5 rounded-full text-[var(--text-secondary)]"
-              >
-                Close
-              </button>
-            </div>
+        {/* ── MAIN HERO ACTION CARD (NEW GAME / RESUME) ── */}
+        <div className="w-full max-w-sm mx-auto z-10 space-y-3 my-2">
+          {activeGameId && (
+            <Link
+              href="/game/active"
+              className="group relative w-full p-4 rounded-3xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-display font-bold shadow-xl shadow-amber-500/20 flex items-center justify-between active:scale-[0.98] transition-all overflow-hidden"
+            >
+              <div className="flex items-center gap-3.5 relative z-10">
+                <div className="w-12 h-12 rounded-2xl bg-slate-950/20 border border-slate-950/10 flex items-center justify-center shrink-0">
+                  <RotateCcw className="w-6 h-6 text-slate-950 animate-spin-slow" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base tracking-wide leading-tight">RESUME MATCH</h3>
+                  <p className="text-[10px] font-semibold text-slate-900/80">Continue active game in progress</p>
+                </div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-slate-950/20 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
+                <ChevronRight className="w-5 h-5 text-slate-950" />
+              </div>
+            </Link>
+          )}
 
-            {/* Audio Toggle */}
-            <div className="flex items-center justify-between py-4 border-b border-[var(--border-custom)]">
+          {/* Animated Neon Ambient Pulse Glow Ring for Low Brightness Visibility */}
+          <div className="relative group w-full">
+            <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 opacity-75 blur-md animate-pulse pointer-events-none" />
+            
+            <Link
+              href="/game/setup"
+              className="relative w-full p-4.5 rounded-3xl bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 text-slate-950 font-display font-bold shadow-[0_0_25px_rgba(0,229,160,0.5)] flex items-center justify-between active:scale-[0.98] transition-all overflow-hidden border-2 border-emerald-100/40"
+            >
+              <div className="flex items-center gap-3.5 relative z-10">
+                <div className="w-12 h-12 rounded-2xl bg-slate-950/20 border border-slate-950/20 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                  🎲
+                </div>
+                <div>
+                  <h3 className="font-black text-base tracking-wide leading-tight">NEW GAME SETUP</h3>
+                  <p className="text-[10px] font-bold text-slate-900/90">Start a new CityMint game</p>
+                </div>
+              </div>
+              <div className="w-8.5 h-8.5 rounded-full bg-slate-950/20 border border-slate-950/10 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0 shadow-xs">
+                <ChevronRight className="w-5 h-5 text-slate-950" />
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* ── 3 MAIN QUICK ACCESS CARDS ── */}
+        <div className="w-full max-w-sm mx-auto z-10 my-2">
+          <div className="grid grid-cols-3 gap-2.5">
+            
+            {/* 1. Rulebook Card */}
+            <button
+              onClick={() => setShowRules(true)}
+              className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#1C1635] to-[#120E24] border border-purple-500/20 flex flex-col justify-between h-36 text-left group hover:border-purple-500/40 active:scale-95 transition-all shadow-lg shadow-purple-950/30 cursor-pointer relative overflow-hidden"
+            >
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-lg mb-2">
+                📖
+              </div>
               <div>
-                <h4 className="font-semibold text-sm text-[var(--text-primary)]">Sound Alerts</h4>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">Synthesize game scanner beeps</p>
+                <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">RULEBOOK</h4>
+                <p className="text-[9px] text-purple-200/60 leading-tight mt-1">Learn the game rules</p>
               </div>
-              <button
-                onClick={handleAudioToggle}
-                className={`w-12 h-6 rounded-full p-1 transition-all ${audioEnabled ? 'bg-[var(--accent-mint)]' : 'bg-[var(--border-custom)]'}`}
+              <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
+                <ChevronRight className="w-3.5 h-3.5 text-purple-300" />
+              </div>
+            </button>
+
+            {/* 2. History Card */}
+            <button
+              onClick={() => setShowHistory(true)}
+              className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#2B1F13] to-[#1A120B] border border-amber-500/20 flex flex-col justify-between h-36 text-left group hover:border-amber-500/40 active:scale-95 transition-all shadow-lg shadow-amber-950/30 cursor-pointer relative overflow-hidden"
+            >
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-lg mb-2">
+                🕒
+              </div>
+              <div>
+                <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">HISTORY ({historyItems.length})</h4>
+                <p className="text-[9px] text-amber-200/60 leading-tight mt-1">View your past games</p>
+              </div>
+              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
+                <ChevronRight className="w-3.5 h-3.5 text-amber-300" />
+              </div>
+            </button>
+
+            {/* 3. QR Cards Card with Neon Pulse Glow */}
+            <div className="relative group h-36">
+              <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-b from-cyan-400 to-teal-500 opacity-50 blur-sm animate-pulse pointer-events-none" />
+              <Link
+                href="/qr-cards"
+                className="relative p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#0F2238] to-[#0A1624] border border-cyan-400/50 flex flex-col justify-between h-36 text-left group hover:border-cyan-300 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.35)] cursor-pointer overflow-hidden"
               >
-                <div className={`w-4 h-4 rounded-full bg-[var(--bg-primary)] transition-all ${audioEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
+                <div className="w-9 h-9 rounded-xl bg-cyan-400/25 border border-cyan-300/40 flex items-center justify-center text-lg mb-2 shadow-[0_0_10px_rgba(6,182,212,0.4)]">
+                  🔲
+                </div>
+                <div>
+                  <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">QR CARDS</h4>
+                  <p className="text-[9px] text-cyan-200/80 leading-tight mt-1">Manage player &amp; property cards</p>
+                </div>
+                <div className="w-6 h-6 rounded-full bg-cyan-400/25 border border-cyan-300/30 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
+                  <ChevronRight className="w-3.5 h-3.5 text-cyan-200" />
+                </div>
+              </Link>
             </div>
 
-            {/* Themes Option */}
-            <div className="py-4">
-              <h4 className="font-semibold text-sm text-[var(--text-primary)] mb-3">Color Themes</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'theme-citymint', name: 'CityMint', color: 'bg-[#080F26] border-[#00E5A0]' },
-                  { id: 'theme-light',    name: 'Light',    color: 'bg-[#F4F7FF] border-[#00A67E]' },
-                  { id: 'theme-dark',     name: 'Dark',     color: 'bg-[#0A0A0F] border-[#4FACFF]' },
-                ].map((th) => (
-                  <button
-                    key={th.id}
-                    onClick={() => handleThemeChange(th.id)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-medium transition-all ${
-                      theme === th.id 
-                        ? 'border-[var(--accent-mint)] bg-[var(--bg-elevated)] text-[var(--text-primary)] font-bold' 
-                        : 'border-[var(--border-custom)] bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'
-                    }`}
-                  >
-                    <span className={`w-6 h-6 rounded-full mb-2 border ${th.color}`} />
-                    {th.name}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
-      )}
 
-      {/* History Modal */}
-      {showHistory && (
-        <div className="fixed inset-0 z-50 bg-[var(--bg-primary)] flex flex-col p-6 animate-in slide-in-from-bottom duration-250">
-          <div className="flex justify-between items-center mb-6 safe-padding-top">
-            <div className="flex items-center gap-2">
-              <History className="w-5 h-5 text-[var(--accent-gold)]" />
-              <h3 className="font-display font-extrabold text-xl text-[var(--text-primary)]">Game History</h3>
-            </div>
-            <button 
-              onClick={() => setShowHistory(false)}
-              className="text-xs font-bold bg-[var(--bg-elevated)] px-3 py-1.5 rounded-full text-[var(--text-secondary)]"
+        {/* ── EVERYTHING YOU NEED DIVIDER & BADGES ── */}
+        <div className="w-full max-w-sm mx-auto z-10 my-2 space-y-2.5">
+          <div className="flex items-center gap-2 justify-center">
+            <span className="w-10 h-[1px] bg-gradient-to-r from-transparent to-amber-500/40" />
+            <span className="text-[9px] font-mono uppercase font-bold tracking-widest text-amber-400/90 flex items-center gap-1.5">
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              EVERYTHING YOU NEED
+            </span>
+            <span className="w-10 h-[1px] bg-gradient-to-l from-transparent to-amber-500/40" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { title: 'SMART BANKER', desc: 'Auto rent & buy calculation', color: 'border-emerald-500/20 bg-[#0A1A17]', icon: Landmark, iconColor: 'text-emerald-400' },
+              { title: 'QR SCANNING', desc: 'Scan cards & play instantly', color: 'border-cyan-500/20 bg-[#0A1822]', icon: Scan, iconColor: 'text-cyan-400' },
+              { title: 'OFFLINE FIRST', desc: 'Play anytime, anywhere', color: 'border-pink-500/20 bg-[#1C0F1A]', icon: WifiOff, iconColor: 'text-pink-400' },
+            ].map((b) => {
+              const IconComp = b.icon;
+              return (
+                <div
+                  key={b.title}
+                  className={`p-3 rounded-2xl border ${b.color} flex flex-col items-center text-center space-y-1 shadow-sm`}
+                >
+                  <IconComp className={`w-5 h-5 ${b.iconColor} mb-0.5`} />
+                  <h5 className="font-display font-extrabold text-[9px] text-white uppercase tracking-wider leading-tight">{b.title}</h5>
+                  <p className="text-[8px] text-slate-400 leading-tight">{b.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── FLOATING BOTTOM DOCK FOOTER ── */}
+        <div className="w-full max-w-sm mx-auto z-10 pt-2 pb-1">
+          <div className="px-4 py-2.5 rounded-2xl bg-[#11141F]/90 border border-white/10 backdrop-blur-md flex items-center justify-between shadow-2xl">
+            <span className="text-[10px] font-mono text-slate-400">
+              CityMint Banker PWA v1.0
+            </span>
+
+            <button
+              onClick={() => setShowSettings(true)}
+              className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+              title="App Settings"
             >
-              Close
+              <Settings className="w-4 h-4" />
             </button>
           </div>
-
-          <div className="flex-1 overflow-y-auto space-y-4">
-            {historyItems.length > 0 ? (
-              historyItems.map((item) => (
-                <div 
-                  key={item.id} 
-                  className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)]"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs text-[var(--text-secondary)]">
-                      {new Date(item.date || item.createdAt).toLocaleDateString()} at{' '}
-                      {new Date(item.date || item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="text-[10px] font-bold tracking-wider bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] px-2 py-0.5 rounded uppercase">
-                      Finished
-                    </span>
-                  </div>
-                  
-                  <h4 className="font-display font-extrabold text-lg text-[var(--text-primary)] mb-3">
-                    🏆 Winner: <span className="text-[var(--accent-gold)]">{item.winnerName}</span>
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-xs text-[var(--text-secondary)] border-t border-[var(--border-custom)] pt-3">
-                    <div>Game ID: <strong className="text-[var(--text-primary)]">{item.id}</strong></div>
-                    <div>Turns Played: <strong className="text-[var(--text-primary)]">{item.turnNumber}</strong></div>
-                    <div>Net Worth: <strong className="text-[var(--text-primary)]">₹{item.winnerNetWorth?.toLocaleString() || 'N/A'}</strong></div>
-                    <div>Players Count: <strong className="text-[var(--text-primary)]">{item.playerCount}</strong></div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                <History className="w-12 h-12 text-[var(--text-secondary)] mb-3 opacity-30" />
-                <p className="text-sm text-[var(--text-secondary)]">No completed games found yet.</p>
-              </div>
-            )}
-          </div>
         </div>
-      )}
 
-    </main>
+        {/* ── MODALS ── */}
+
+        {/* Rules Modal */}
+        {showRules && (
+          <div className="fixed inset-0 z-50 bg-[var(--bg-primary)] flex flex-col animate-in slide-in-from-bottom duration-250">
+            <div className="flex-1 overflow-hidden relative">
+              <RulebookSearch onClose={() => setShowRules(false)} />
+            </div>
+          </div>
+        )}
+
+        {/* Notification Modal */}
+        {showNotificationModal && (
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+            <div className="w-full max-w-xs bg-[#12151F] border border-white/10 rounded-3xl p-5 shadow-2xl text-center space-y-3 animate-in zoom-in-95">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-lg">
+                🔔
+              </div>
+              <h3 className="font-display font-extrabold text-base text-white">App System Status</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                CityMint Banker PWA is running smoothly in offline-first mode. All local games are saved automatically.
+              </p>
+              <button
+                onClick={() => setShowNotificationModal(false)}
+                className="w-full py-2.5 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-xs active:scale-95 transition-all"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Modal */}
+        {showSettings && (
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-6 animate-in fade-in duration-200">
+            <div className="w-full max-w-sm bg-[#12151F] border border-white/10 rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-250 text-left relative">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-display font-black text-xl text-white">App Settings</h3>
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="w-8 h-8 rounded-full bg-[#1E2330] border border-white/10 flex items-center justify-center text-slate-300 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Audio Toggle */}
+              <div className="flex items-center justify-between py-4 border-b border-white/10">
+                <div>
+                  <h4 className="font-semibold text-xs text-white">Sound Effects</h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Scanner beeps &amp; cash chimes</p>
+                </div>
+                <button
+                  onClick={handleAudioToggle}
+                  className={`w-12 h-6 rounded-full p-1 transition-all ${audioEnabled ? 'bg-emerald-400' : 'bg-slate-700'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-slate-950 transition-all ${audioEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              {/* Themes Option */}
+              <div className="py-4 space-y-3">
+                <h4 className="font-semibold text-xs text-white">Visual Color Theme</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'theme-citymint', name: 'Obsidian', color: '#00E5A0' },
+                    { id: 'theme-dark',     name: 'Cyber',    color: '#4FACFF' },
+                    { id: 'theme-light',    name: 'Light',    color: '#FFFFFF' },
+                  ].map((th) => (
+                    <button
+                      key={th.id}
+                      onClick={() => handleThemeChange(th.id)}
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-medium transition-all ${
+                        theme === th.id 
+                          ? 'border-emerald-400 bg-emerald-500/10 text-white font-bold' 
+                          : 'border-white/10 bg-slate-900/60 text-slate-400 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full mb-1.5 border border-white/20" style={{ backgroundColor: th.color }} />
+                      {th.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-full py-3 mt-2 rounded-xl font-display font-bold bg-[#1E2330] border border-white/10 text-white text-xs hover:bg-slate-800 active:scale-95 transition-all"
+              >
+                Close Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* History Modal */}
+        {showHistory && (
+          <div className="fixed inset-0 z-50 bg-[#0A0B10] flex flex-col p-6 animate-in slide-in-from-bottom duration-250 text-left">
+            <div className="flex justify-between items-center mb-6 safe-padding-top">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-amber-400" />
+                <h3 className="font-display font-black text-xl text-white">Game History</h3>
+              </div>
+              <button 
+                onClick={() => setShowHistory(false)}
+                className="w-8 h-8 rounded-full bg-[#1E2330] border border-white/10 flex items-center justify-center text-slate-300 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar">
+              {historyItems.length > 0 ? (
+                historyItems.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="p-5 rounded-3xl bg-[#12151F] border border-white/10 space-y-3 shadow-xl"
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs text-slate-400">
+                        {new Date(item.date || item.createdAt).toLocaleDateString()} at{' '}
+                        {new Date(item.date || item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-[10px] font-extrabold tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full uppercase">
+                        Match Completed
+                      </span>
+                    </div>
+                    
+                    <h4 className="font-display font-extrabold text-lg text-white">
+                      🏆 Champion: <span className="text-amber-400">{item.winnerName}</span>
+                    </h4>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-400 border-t border-white/10 pt-3">
+                      <div>Game Code: <strong className="text-white font-mono">{item.id}</strong></div>
+                      <div>Turns Played: <strong className="text-white font-mono">{item.turnNumber}</strong></div>
+                      <div>Net Worth: <strong className="text-amber-400 font-mono">₹{item.winnerNetWorth?.toLocaleString() || 'N/A'}</strong></div>
+                      <div>Players Count: <strong className="text-white font-mono">{item.playerCount}</strong></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
+                  <History className="w-12 h-12 text-slate-400 mb-3" />
+                  <p className="text-sm text-slate-300">No completed game matches found yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      </main>
     </InstallGate>
   );
 }

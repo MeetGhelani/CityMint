@@ -22,15 +22,14 @@ function isStandalone() {
 }
 
 export default function InstallGate({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  const [installed, setInstalled] = useState(false);
+  const [mounted, setMounted] = useState(true);
+  const [installed, setInstalled] = useState(true);
   const [showIOSSheet, setShowIOSSheet] = useState(false);
   const [installReady, setInstallReady] = useState(false);
   const [installing, setInstalling] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     if (isStandalone()) { setInstalled(true); return; }
 
     // Read early captured event if it exists
@@ -61,7 +60,6 @@ export default function InstallGate({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  if (!mounted) return null;
   if (installed) return <>{children}</>;
 
   const handleInstallClick = async () => {

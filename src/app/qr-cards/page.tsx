@@ -87,20 +87,17 @@ export default function QRCardsPage() {
       <div className="flex-none px-4 sm:px-6 pt-3 sm:pt-4 pb-2 border-b border-[var(--border-custom)]/50 bg-[var(--bg-secondary)]/50 print:hidden z-10 space-y-3 sm:space-y-4">
         
         {/* Tabs — Equal 3-Column Grid on Mobile & Desktop */}
-        <div className="grid grid-cols-3 gap-1 sm:gap-2 max-w-xl mx-auto p-1 bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-custom)] text-[11px] sm:text-xs">
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 max-w-xl mx-auto p-1 bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-custom)] text-[10px] sm:text-xs">
           <button
             onClick={() => setActiveTab('properties')}
-            className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-1.5 sm:px-2.5 rounded-xl font-bold transition-all min-w-0 ${
+            className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-1 sm:px-2.5 rounded-xl font-bold transition-all min-w-0 ${
               activeTab === 'properties'
                 ? 'bg-[var(--accent-mint)] text-[var(--bg-primary)] shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <Building className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">
-              <span className="hidden sm:inline">Properties</span>
-              <span className="sm:hidden">Deeds</span> ({INITIAL_PROPERTIES.length})
-            </span>
+            <span className="truncate">Properties ({INITIAL_PROPERTIES.length})</span>
           </button>
 
           <button
