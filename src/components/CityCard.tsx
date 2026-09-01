@@ -12,6 +12,7 @@ interface CityCardProps {
   onSell?: () => void;
   onAuction?: () => void;
   onUpgrade?: () => void;
+  onFreeUpgrade?: () => void;
   currentPlayerId?: string | null;
   currentPlayerName?: string;
 }
@@ -26,6 +27,7 @@ export default function CityCard({
   onPayRent,
   onAuction,
   onUpgrade,
+  onFreeUpgrade,
   currentPlayerId,
   currentPlayerName,
 }: CityCardProps) {
@@ -217,12 +219,24 @@ export default function CityCard({
 
           {isOwned && isOwnerCurrent && (
             <div className="space-y-2">
-              {onUpgrade && property.level < 5 && (
+              {/* Free land-bonus upgrade (no cost) — shown when player lands on own property */}
+              {onFreeUpgrade && property.level < 5 && (
+                <button
+                  onClick={onFreeUpgrade}
+                  className="w-full py-3.5 rounded-xl font-display font-bold bg-amber-500 text-[var(--bg-primary)] hover:bg-amber-400 active:scale-[0.98] transition-all text-center shadow-lg text-sm flex flex-col items-center gap-0.5 leading-tight"
+                >
+                  <span>🎁 Land Bonus — Free +1 Level!</span>
+                  <span className="text-amber-900 text-[11px] font-semibold tracking-wide">Upgrade to Level {property.level + 1} at no cost</span>
+                </button>
+              )}
+              {/* Paid upgrade — shown from portfolio / manual view */}
+              {onUpgrade && !onFreeUpgrade && property.level < 5 && (
                 <button
                   onClick={onUpgrade}
-                  className="w-full py-3.5 rounded-xl font-display font-bold bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98] transition-all text-center shadow-lg text-sm"
+                  className="w-full py-3.5 rounded-xl font-display font-bold bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98] transition-all text-center shadow-lg text-sm flex flex-col items-center gap-0.5 leading-tight"
                 >
-                  Upgrade Level ({property.level} → {property.level + 1}) — ₹{upgradeCost}
+                  <span>⬆ Upgrade to Level {property.level + 1}</span>
+                  <span className="text-emerald-200 text-[11px] font-semibold tracking-wide">Cost: ₹{upgradeCost}</span>
                 </button>
               )}
               {onSell && (
@@ -230,7 +244,7 @@ export default function CityCard({
                   onClick={onSell}
                   className="w-full py-3 rounded-xl font-display font-semibold border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 active:scale-[0.98] transition-all text-center"
                 >
-                  Sell Property (Get ₹{Math.floor(getPropertyValue(property) / 2)})
+                  Sell Property (Get ₹{property.purchasePrice})
                 </button>
               )}
             </div>

@@ -11,14 +11,15 @@ import {
 } from 'lucide-react';
 
 import { 
-  GameState, Player, Property, GameTransaction, ACTION_CARDS, PROPERTY_GROUPS,
+  GameState, Player, Property, GameTransaction, ACTION_CARDS, PROPERTY_GROUPS, RENT_MULTIPLIERS,
   getRentAmount, getPropertyValue, calculateNetWorth,
   endTurn, purchaseProperty, payRent, passStart, activateTeleport,
   sendToJail, releaseFromJail, sellProperty, resolveDebt,
   declareBankruptcy, undoLastAction, manualCorrectState, executeActionCard,
   endGame, saveGameStateToStorage, loadGameStateFromStorage,
   executeTargetedPoliceRaid, executeTargetedPropertyUpgrade, executePropertySwap,
-  computeMatchAnalytics, executeAuctionWin, upgradePropertyLevel
+  computeMatchAnalytics, executeAuctionWin, upgradePropertyLevel, landOnOwnPropertyUpgrade,
+  transferPropertyAsDebtPayment
 } from '@/lib/gameEngine';
 import { localGetSetting, localGetGame, localSaveGame, localSaveHistory, localSaveSetting } from '@/lib/db';
 import { syncGameStateToSupabase, flushSyncQueue } from '@/lib/syncEngine';
@@ -38,7 +39,7 @@ export default function ActiveGame() {
   // Scanner & Modal States
   const [showScanner, setShowScanner] = useState(false);
   const [scannedResult, setScannedResult] = useState<string | null>(null);
-  const [scanContext, setScanContext] = useState<'BUY' | 'RENT' | 'TELEPORT' | 'JAIL' | 'ACTION' | 'INFO' | null>(null);
+  const [scanContext, setScanContext] = useState<'BUY' | 'RENT' | 'TELEPORT' | 'JAIL' | 'ACTION' | 'INFO' | 'SELF_LAND' | null>(null);
   const [scannedProperty, setScannedProperty] = useState<Property | null>(null);
   const [scannedPlayer, setScannedPlayer] = useState<Player | null>(null);
   const [auctionProperty, setAuctionProperty] = useState<Property | null>(null);
@@ -55,6 +56,7 @@ export default function ActiveGame() {
   // Manual Adjustments Admin Panel State
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminSelectedPlayer, setAdminSelectedPlayer] = useState<string>('');
+  const [adminNewName, setAdminNewName] = useState<string>('');
   const [adminBalanceChange, setAdminBalanceChange] = useState<number>(0);
   const [adminSetJail, setAdminSetJail] = useState<'ACTIVE' | 'IN_JAIL' | ''>('');
   const [adminSelectedProp, setAdminSelectedProp] = useState<string>('');
@@ -68,13 +70,25 @@ export default function ActiveGame() {
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'warning' | 'info' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activePlayerCardRef = useRef<HTMLDivElement | null>(null);
 
-  const showToast = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+  // Auto-scroll current turn player's card into view when turn changes
+  useEffect(() => {
+    if (game?.currentPlayerId && activePlayerCardRef.current) {
+      activePlayerCardRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [game?.currentPlayerId]);
+
+  const showToast = (message: string, type: 'error' | 'warning' | 'info' = 'error', durationMs: number = 3000) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, type });
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
-    }, 3500);
+    }, durationMs);
   };
 
   const triggerConfirm = (title: string, message: string, onConfirm: () => void) => {
@@ -149,9 +163,9 @@ export default function ActiveGame() {
     // Audio SFX triggers
     const latestTx = nextState.transactions[0];
     if (latestTx) {
-      if (latestTx.type === 'RENT' || latestTx.type === 'PURCHASE' || latestTx.type === 'START') {
+      if (latestTx.type === 'RENT' || latestTx.type === 'PURCHASE' || latestTx.type === 'START' || latestTx.type === 'SALE' || latestTx.type === 'DEBT_PAYMENT' || latestTx.type === 'BANKRUPTCY') {
         soundEffects.playCashChime();
-      } else if (latestTx.type === 'JAIL_ENTER' || latestTx.type === 'BANKRUPTCY') {
+      } else if (latestTx.type === 'JAIL_ENTER') {
         soundEffects.playJailSiren();
       }
     }
@@ -168,10 +182,8 @@ export default function ActiveGame() {
   // Celebrate on game end
   useEffect(() => {
     if (game?.status === 'ENDED' && game.winnerId) {
-      // Fire confetti sequence
-      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
       soundEffects.playVictoryFanfare();
-      
+
       // Save game to history list
       const winner = game.players.find((p) => p.id === game.winnerId);
       const summary = {
@@ -185,6 +197,52 @@ export default function ActiveGame() {
       };
       localSaveHistory(summary);
       localSaveSetting('activeGameId', null); // Clear active game session from settings
+
+      // 🎉 Multi-burst confetti celebration
+      const winnerColor = winner?.color ?? '#F59E0B';
+      const colors = [winnerColor, '#F59E0B', '#FFFFFF', '#10B981'];
+
+      const fireSide = (origin: { x: number; y: number }, angle: number) => {
+        confetti({
+          particleCount: 80,
+          angle,
+          spread: 55,
+          origin,
+          colors,
+          startVelocity: 45,
+          gravity: 0.9,
+          ticks: 200,
+        });
+      };
+
+      const fireOverhead = () => {
+        confetti({
+          particleCount: 120,
+          spread: 100,
+          origin: { x: 0.5, y: 0.3 },
+          colors,
+          startVelocity: 30,
+          gravity: 1,
+          ticks: 250,
+          scalar: 1.2,
+        });
+      };
+
+      // Burst sequence: left cannon, right cannon × 3 rounds + overhead shower
+      fireSide({ x: 0, y: 0.65 }, 60);
+      fireSide({ x: 1, y: 0.65 }, 120);
+
+      setTimeout(() => {
+        fireSide({ x: 0.1, y: 0.5 }, 55);
+        fireSide({ x: 0.9, y: 0.5 }, 125);
+      }, 300);
+
+      setTimeout(() => {
+        fireSide({ x: 0, y: 0.7 }, 65);
+        fireSide({ x: 1, y: 0.7 }, 115);
+      }, 600);
+
+      setTimeout(fireOverhead, 800);
     }
   }, [game?.status, game?.winnerId]);
 
@@ -212,12 +270,22 @@ export default function ActiveGame() {
   const handleEndTurn = () => {
     const nextState = endTurn(game);
     updateGameState(nextState);
+    const nextPlayer = nextState.players.find((p) => p.id === nextState.currentPlayerId);
+    if (nextPlayer) {
+      showToast(`👤 Turn switched to ${nextPlayer.name}!`, 'info', 2500);
+    }
   };
 
   const handleUndo = () => {
     if (game.undoStack.length === 0) return;
-    const nextState = undoLastAction(game);
-    updateGameState(nextState);
+    triggerConfirm(
+      'Undo Last Action',
+      'This will roll back the most recent transaction. Are you sure?',
+      () => {
+        const nextState = undoLastAction(game);
+        updateGameState(nextState);
+      }
+    );
   };
 
   // QR Scanning resolution
@@ -228,8 +296,15 @@ export default function ActiveGame() {
     // 1. Process Special Zone: START PASS
     if (code === 'CM-SPECIAL-START') {
       if (game.currentPlayerId) {
-        const nextState = passStart(game, game.currentPlayerId);
-        updateGameState(nextState);
+        triggerConfirm(
+          'Pass Start Bonus',
+          `Credit ₹2,000 Pass Start salary to ${currentPlayer?.name}?`,
+          () => {
+            const nextState = passStart(game, game.currentPlayerId!);
+            updateGameState(nextState);
+            showToast(`⚡ ₹2,000 Pass Start salary bonus credited to ${currentPlayer?.name}!`, 'info', 2500);
+          }
+        );
       }
       return;
     }
@@ -239,7 +314,7 @@ export default function ActiveGame() {
       if (game.currentPlayerId) {
         const pObj = game.players.find((p) => p.id === game.currentPlayerId);
         if (pObj && pObj.balance < 500) {
-          showToast(`Insufficient Balance! Teleportation costs ₹500, but ${pObj.name} only has ₹${pObj.balance}`);
+          showToast(`⚠️ Insufficient Balance! Teleportation costs ₹500, but ${pObj.name} only has ₹${pObj.balance.toLocaleString()}.`, 'warning', 3000);
           return;
         }
         const nextState = activateTeleport(game, game.currentPlayerId);
@@ -253,16 +328,17 @@ export default function ActiveGame() {
       if (game.currentPlayerId) {
         const nextState = sendToJail(game, game.currentPlayerId);
         updateGameState(nextState);
+        showToast(`🔒 ${currentPlayer?.name} has been sent directly to Jail!`, 'info', 2500);
       }
       return;
     }
 
     // 4. Process Player Scan (Turn Switch shortcut)
-    if (code.startsWith('CM-PLAYER-')) {
-      const targetP = game.players.find((p) => p.playerCode === code);
+    if (code.startsWith('CM-PLAYER-') || game.players.some((p) => p.playerCode === code)) {
+      const targetP = game.players.find((p) => p.playerCode === code || p.playerCode === code.replace('CM-PLAYER-', ''));
       if (targetP) {
         if (targetP.status === 'ELIMINATED' || targetP.status === 'BANKRUPT') {
-          showToast(`${targetP.name} is eliminated and cannot take turns.`);
+          showToast(`🚫 ${targetP.name} is eliminated and cannot take turns.`, 'warning', 3000);
           return;
         }
         // Optimistically update turns
@@ -271,8 +347,9 @@ export default function ActiveGame() {
           currentPlayerId: targetP.id,
         };
         updateGameState(nextState);
+        showToast(`👤 Turn switched to ${targetP.name}!`, 'info', 2500);
       } else {
-        showToast('Unknown player QR code card scanned.');
+        showToast('Unknown player QR code card scanned.', 'error', 3000);
       }
       return;
     }
@@ -284,8 +361,9 @@ export default function ActiveGame() {
       if (card && game.currentPlayerId) {
         setDrawnActionId(card.id);
         setScanContext('ACTION');
+        showToast(`🃏 Action Card Drawn: ${card.name}`, 'info', 2500);
       } else {
-        showToast('Unknown action card code scanned.');
+        showToast('Unknown action card code scanned.', 'error', 3000);
       }
       return;
     }
@@ -298,20 +376,45 @@ export default function ActiveGame() {
     if (prop) {
       setScannedProperty(prop);
       if (prop.ownerId === null) {
+        // Warning toast if player cash is below property purchase price
+        if (currentPlayer && currentPlayer.balance < prop.purchasePrice) {
+          showToast(
+            `⚠️ Shortfall Warning! ${currentPlayer.name} has ₹${currentPlayer.balance.toLocaleString()}, but ${prop.cityName} costs ₹${prop.purchasePrice.toLocaleString()}.`,
+            'warning',
+            3000
+          );
+        }
         setScanContext('BUY');
       } else if (prop.ownerId === game.currentPlayerId) {
-        setScanContext('INFO'); // Show detail card for self-owned property (can mortgage/sell)
+        setScanContext('SELF_LAND'); // Player landed on their own property — free upgrade available
       } else {
+        // Warning toast if player cash is below rent due
+        const rentAmount = getRentAmount(prop, undefined) || Math.round(prop.baseRent * RENT_MULTIPLIERS[prop.level as keyof typeof RENT_MULTIPLIERS]);
+        if (currentPlayer && currentPlayer.balance < rentAmount) {
+          showToast(
+            `⚠️ Rent Shortfall! ${currentPlayer.name} owes ₹${rentAmount.toLocaleString()} rent for ${prop.cityName}, but only has ₹${currentPlayer.balance.toLocaleString()}. Paying will enter Debt Settlement!`,
+            'warning',
+            3500
+          );
+        }
         setScanContext('RENT');
       }
     } else {
-      showToast(`Scanned code "${code}" not recognized as a valid CityMint board space.`);
+      showToast(`Scanned code "${code}" not recognized as a valid CityMint board space.`, 'error', 3000);
     }
   };
 
   // Property operations
   const handleBuyProperty = () => {
     if (!scannedProperty || !game.currentPlayerId) return;
+    if (currentPlayer && currentPlayer.balance < scannedProperty.purchasePrice) {
+      showToast(
+        `⚠️ Insufficient Balance! ${currentPlayer.name} needs ₹${scannedProperty.purchasePrice.toLocaleString()} to buy ${scannedProperty.cityName}, but only has ₹${currentPlayer.balance.toLocaleString()}.`,
+        'warning',
+        3000
+      );
+      return;
+    }
     const nextState = purchaseProperty(game, game.currentPlayerId, scannedProperty.id);
     updateGameState(nextState);
     setScanContext(null);
@@ -378,7 +481,14 @@ export default function ActiveGame() {
 
   // Debt settlement operations
   const handleDebtorSellProp = (propId: string) => {
-    if (activeDebtor) {
+    if (!activeDebtor || !game.activeDebt) return;
+
+    if (game.activeDebt.creditorId !== 'BANK') {
+      // Player-to-player debt: transfer property directly to creditor (no cash)
+      const nextState = transferPropertyAsDebtPayment(game, activeDebtor.id, propId);
+      updateGameState(nextState);
+    } else {
+      // Bank debt: sell property to bank (property → unowned, debtor gets cash)
       const nextState = sellProperty(game, activeDebtor.id, propId);
       updateGameState(nextState);
     }
@@ -411,8 +521,15 @@ export default function ActiveGame() {
       return;
     }
 
+    const trimmedName = adminNewName.trim();
+    if (trimmedName && game.players.some((p) => p.id !== adminSelectedPlayer && p.name.toLowerCase() === trimmedName.toLowerCase())) {
+      showToast('Another player already has that name. Please choose a unique name.');
+      return;
+    }
+
     const nextState = manualCorrectState(game, {
       playerId: adminSelectedPlayer,
+      nameChange: trimmedName || undefined,
       propertyId: adminSelectedProp || undefined,
       balanceChange: adminBalanceChange !== 0 ? adminBalanceChange : undefined,
       jailStatusChange: adminSetJail !== '' ? (adminSetJail as any) : undefined,
@@ -423,6 +540,7 @@ export default function ActiveGame() {
     updateGameState(nextState);
     
     // Reset admin form
+    setAdminNewName('');
     setAdminBalanceChange(0);
     setAdminSetJail('');
     setAdminSelectedProp('');
@@ -492,7 +610,12 @@ export default function ActiveGame() {
             
             {/* 1. 🏆 Live Multi-Player Scoreboard Strip */}
             <div className="overflow-x-auto no-scrollbar pb-0.5">
-              <div className="flex items-center gap-2 min-w-max">
+              <div className={`grid gap-1.5 ${
+                game.players.length === 2 ? 'grid-cols-2' :
+                game.players.length === 3 ? 'grid-cols-3' :
+                game.players.length === 4 ? 'grid-cols-4' :
+                'flex items-center min-w-max gap-2'
+              }`}>
                 {game.players.map((player) => {
                   const isCurrent = player.id === game.currentPlayerId;
                   const propsCount = game.properties.filter((p) => p.ownerId === player.id).length;
@@ -500,10 +623,11 @@ export default function ActiveGame() {
                   return (
                     <div
                       key={player.id}
+                      ref={isCurrent ? activePlayerCardRef : null}
                       onClick={() => {
                         setInspectPlayerId(player.id);
                       }}
-                      className={`px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-2 ${
+                      className={`px-2 py-1.5 sm:px-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 min-w-0 ${
                         isCurrent
                           ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)] shadow-sm ring-1 ring-[var(--accent-mint)]/50'
                           : 'bg-[var(--bg-secondary)] border-[var(--border-custom)] opacity-75 hover:opacity-100'
@@ -512,19 +636,19 @@ export default function ActiveGame() {
                     >
                       {/* Properly aligned avatar dot with pulse ring when current */}
                       <div className="relative shrink-0 flex items-center justify-center">
-                        <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: player.color }} />
+                        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-white/20" style={{ backgroundColor: player.color }} />
                         {isCurrent && (
                           <span className="absolute -inset-1 rounded-full border border-[var(--accent-mint)] animate-pulse pointer-events-none" />
                         )}
                       </div>
 
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1">
-                          <span className="font-display font-extrabold text-[11px] text-[var(--text-primary)]">{player.name}</span>
-                          {player.status === 'IN_JAIL' && <span className="text-[8px]">🔒</span>}
+                          <span className="font-display font-extrabold text-[10px] sm:text-[11px] text-[var(--text-primary)] truncate">{player.name}</span>
+                          {player.status === 'IN_JAIL' && <span className="text-[8px] shrink-0">🔒</span>}
                         </div>
-                        <p className="text-[9px] font-mono text-[var(--text-secondary)]">
-                          ₹{player.balance >= 1000 ? `${(player.balance / 1000).toFixed(1)}k` : player.balance} · 🏢 {propsCount}
+                        <p className="text-[8.5px] sm:text-[9px] font-mono text-[var(--text-secondary)] truncate">
+                          ₹{player.balance >= 1000 ? `${(player.balance / 1000).toFixed(1)}k` : player.balance} · 🏢{propsCount}
                         </p>
                       </div>
                     </div>
@@ -711,8 +835,15 @@ export default function ActiveGame() {
               <button
                 onClick={() => {
                   if (!game.currentPlayerId) return;
-                  const nextState = passStart(game, game.currentPlayerId);
-                  updateGameState(nextState);
+                  triggerConfirm(
+                    'Pass Start Bonus',
+                    `Credit ₹2,000 Pass Start salary to ${currentPlayer?.name}?`,
+                    () => {
+                      const nextState = passStart(game, game.currentPlayerId!);
+                      updateGameState(nextState);
+                      showToast(`⚡ ₹2,000 Pass Start salary bonus credited to ${currentPlayer?.name}!`, 'info', 2500);
+                    }
+                  );
                 }}
                 disabled={currentPlayer?.status !== 'ACTIVE'}
                 className="py-3 px-3 rounded-xl text-xs font-bold bg-[var(--accent-mint)]/10 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30 disabled:pointer-events-none"
@@ -935,13 +1066,15 @@ export default function ActiveGame() {
 
         {/* DEBT SETTLEMENT / BANKRUPTCY REVIEW CONTAINER */}
         {game.status === 'BANKRUPTCY_REVIEW' && game.activeDebt && activeDebtor && (
-          <div className="absolute inset-0 z-40 bg-[var(--bg-primary)] p-6 flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6">
+          <div className="absolute inset-0 z-40 bg-[var(--bg-primary)] flex flex-col">
+
+            {/* ── FIXED TOP: Alert Header + Stats ── */}
+            <div className="flex-none px-5 pt-6 pb-4 space-y-4 border-b border-[var(--border-custom)] bg-[var(--bg-primary)]">
               {/* Alert Header */}
               <div className="text-center">
-                <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-3 animate-bounce" />
-                <h2 className="font-display font-extrabold text-2xl text-[var(--text-primary)]">Debt Settlement</h2>
-                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                <ShieldAlert className="w-10 h-10 text-red-500 mx-auto mb-2 animate-bounce" />
+                <h2 className="font-display font-extrabold text-xl text-[var(--text-primary)]">Debt Settlement</h2>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                   {activeDebtor.name} owes ₹{game.activeDebt.amountDue} to {activeCreditorName}
                 </p>
               </div>
@@ -958,72 +1091,87 @@ export default function ActiveGame() {
                 </div>
               </div>
 
-              {/* Eligible Property Assets to Sell */}
-              <div className="space-y-3">
-                <h3 className="font-display font-bold text-xs uppercase tracking-wider text-[var(--text-secondary)] px-1">
-                  Select properties to sell (at 50% valuation)
-                </h3>
-                
-                {game.properties.filter((p) => p.ownerId === activeDebtor.id).length > 0 ? (
-                  <div className="space-y-2">
-                    {game.properties
-                      .filter((p) => p.ownerId === activeDebtor.id)
-                      .map((prop) => {
-                        const val = getPropertyValue(prop);
-                        const refund = Math.floor(val / 2);
-                        return (
-                          <div 
-                            key={prop.id}
-                            className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex items-center justify-between"
-                          >
-                            <div>
-                              <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">{prop.cityName}</h4>
-                              <p className="text-[10px] text-[var(--text-secondary)]">Current Level: {prop.level} (Worth ₹{val})</p>
-                            </div>
-                            <button
-                              onClick={() => handleDebtorSellProp(prop.id)}
-                              className="px-4 py-2 bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/30 active:scale-95 text-xs font-bold rounded-xl transition-all"
-                            >
-                              Sell for +₹{refund}
-                            </button>
-                          </div>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <div className="text-center p-6 bg-[var(--bg-secondary)]/50 rounded-xl border border-dashed border-[var(--border-custom)] text-xs text-[var(--text-secondary)]">
-                    No properties owned to liquidate.
-                  </div>
-                )}
-              </div>
+              {/* Section label — context sensitive */}
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] px-0.5">
+                {game.activeDebt.creditorId !== 'BANK'
+                  ? `Transfer to ${game.players.find((p) => p.id === game.activeDebt!.creditorId)?.name ?? 'creditor'} to reduce debt`
+                  : 'Sell to Bank to get cash and reduce shortfall'}
+              </p>
             </div>
 
-            {/* Resolution Options */}
-            <div className="space-y-3 mt-8 border-t border-[var(--border-custom)] pt-6">
+            {/* ── SCROLLABLE MIDDLE: Properties List ── */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2 no-scrollbar">
+              {game.properties.filter((p) => p.ownerId === activeDebtor.id).length > 0 ? (
+                game.properties
+                  .filter((p) => p.ownerId === activeDebtor.id)
+                  .map((prop) => {
+                    const isPlayerCreditor = game.activeDebt!.creditorId !== 'BANK';
+                    const creditorName = isPlayerCreditor
+                      ? game.players.find((p) => p.id === game.activeDebt!.creditorId)?.name ?? 'Player'
+                      : 'Bank';
+                    return (
+                      <div
+                        key={prop.id}
+                        className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <h4 className="font-display font-bold text-sm text-[var(--text-primary)] truncate">{prop.cityName}</h4>
+                          <p className="text-[10px] text-[var(--text-secondary)]">
+                            Level {prop.level} · ₹{prop.purchasePrice}
+                            {isPlayerCreditor && (
+                              <span className="ml-1 text-blue-400">→ {creditorName}</span>
+                            )}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDebtorSellProp(prop.id)}
+                          className={`px-3 py-2 text-xs font-bold rounded-xl transition-all shrink-0 active:scale-95 ${
+                            isPlayerCreditor
+                              ? 'bg-blue-500/15 border border-blue-500/30 text-blue-400 hover:bg-blue-500/25'
+                              : 'bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/30'
+                          }`}
+                        >
+                          {isPlayerCreditor
+                            ? `Transfer → ${creditorName}`
+                            : `Sell +₹${prop.purchasePrice}`}
+                        </button>
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="text-center p-6 bg-[var(--bg-secondary)]/50 rounded-xl border border-dashed border-[var(--border-custom)] text-xs text-[var(--text-secondary)]">
+                  No properties owned to liquidate.
+                </div>
+              )}
+            </div>
+
+            {/* ── FIXED BOTTOM: Action Buttons ── */}
+            <div className="flex-none px-5 pt-4 pb-8 border-t border-[var(--border-custom)] bg-[var(--bg-primary)]" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
               {game.activeDebt.shortfall <= 0 ? (
                 <button
                   onClick={handlePayDebt}
                   className="w-full py-4 rounded-xl font-display font-bold bg-[var(--accent-mint)] text-[var(--bg-primary)] active:scale-[0.98] transition-all text-center shadow-lg animate-pulse"
                 >
-                  Confirm Payment (₹{game.activeDebt.amountDue})
+                  ✓ Confirm Payment (₹{game.activeDebt.amountDue})
                 </button>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handleDeclareBankruptcy('ELIMINATE')}
-                    className="py-3.5 rounded-xl font-display font-bold border border-red-500/30 bg-red-500/15 text-red-400 active:scale-95 text-xs text-center"
+                    className="py-4 rounded-xl font-display font-bold border border-red-500/40 bg-red-500/15 text-red-400 hover:bg-red-500/25 active:scale-95 text-sm text-center transition-all"
                   >
                     Eliminate Player
                   </button>
                   <button
                     onClick={() => handleDeclareBankruptcy('END_GAME')}
-                    className="py-3.5 rounded-xl font-display font-bold bg-[var(--accent-gold)] text-[var(--bg-primary)] active:scale-95 text-xs text-center"
+                    className="py-4 rounded-xl font-display font-bold bg-[var(--accent-gold)] text-[var(--bg-primary)] hover:opacity-90 active:scale-95 text-sm text-center transition-all"
                   >
                     End Game
                   </button>
                 </div>
               )}
             </div>
+
           </div>
         )}
 
@@ -1179,10 +1327,42 @@ export default function ActiveGame() {
             onClose={() => setScanContext(null)}
             onUpgrade={() => {
               if (!game.currentPlayerId) return;
+              const upgradeCost = scannedProperty.baseRent * 5;
+              if (currentPlayer && currentPlayer.balance < upgradeCost) {
+                showToast(
+                  `⚠️ Insufficient Balance! Upgrading ${scannedProperty.cityName} costs ₹${upgradeCost.toLocaleString()}, but ${currentPlayer.name} only has ₹${currentPlayer.balance.toLocaleString()}.`,
+                  'warning',
+                  3000
+                );
+                return;
+              }
               const nextState = upgradePropertyLevel(game, game.currentPlayerId, scannedProperty.id);
               updateGameState(nextState);
               setScanContext(null);
             }}
+            onSell={() => handleSellProperty(scannedProperty.id, scannedProperty.ownerId!)}
+            currentPlayerId={game.currentPlayerId}
+            currentPlayerName={currentPlayer?.name}
+          />
+        </div>
+      )}
+
+      {/* Landed on Own Property — Free +1 Level Upgrade */}
+      {scanContext === 'SELF_LAND' && scannedProperty && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center p-6 animate-in fade-in duration-200">
+          <CityCard
+            property={scannedProperty}
+            ownerName={currentPlayer?.name}
+            onClose={() => setScanContext(null)}
+            onFreeUpgrade={
+              scannedProperty.level < 5 && game.currentPlayerId
+                ? () => {
+                    const nextState = landOnOwnPropertyUpgrade(game, game.currentPlayerId!, scannedProperty.id);
+                    updateGameState(nextState);
+                    setScanContext(null);
+                  }
+                : undefined
+            }
             onSell={() => handleSellProperty(scannedProperty.id, scannedProperty.ownerId!)}
             currentPlayerId={game.currentPlayerId}
             currentPlayerName={currentPlayer?.name}
@@ -1382,7 +1562,7 @@ export default function ActiveGame() {
               <div className="relative">
                 <select
                   value={adminSelectedPlayer}
-                  onChange={(e) => setAdminSelectedPlayer(e.target.value)}
+                  onChange={(e) => { setAdminSelectedPlayer(e.target.value); setAdminNewName(''); }}
                   className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 pl-3 pr-10 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
                 >
                   <option value="">-- Choose Player --</option>
@@ -1397,6 +1577,21 @@ export default function ActiveGame() {
             {/* Adjust Balance or Jail status */}
             {adminSelectedPlayer && (
               <div className="space-y-4 mb-4 p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-primary)]/60 border border-[var(--border-custom)]">
+
+                {/* Rename Player */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)]">Rename Player</label>
+                  <input
+                    type="text"
+                    value={adminNewName}
+                    onChange={(e) => setAdminNewName(e.target.value)}
+                    placeholder={`Current: ${game.players.find((p) => p.id === adminSelectedPlayer)?.name ?? '—'}`}
+                    maxLength={24}
+                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)] placeholder-[var(--text-muted)]"
+                  />
+                  <p className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Leave blank to keep the current name</p>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)]">Adjust Balance (₹)</label>
                   <div className="flex items-center gap-1.5 sm:gap-2">
@@ -1512,9 +1707,17 @@ export default function ActiveGame() {
 
       {/* Floating App-wide Toast */}
       {toast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm p-4 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-md shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
-          <span className="text-base">⚠️</span>
-          <p className="text-xs font-semibold text-red-400 leading-relaxed">
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[150] w-[92%] max-w-md p-4 rounded-2xl border backdrop-blur-md shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200 ${
+          toast.type === 'warning'
+            ? 'bg-amber-950/90 border-amber-500/40 text-amber-200'
+            : toast.type === 'info'
+            ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200'
+            : 'bg-red-950/90 border-red-500/40 text-red-200'
+        }`}>
+          <span className="text-xl shrink-0">
+            {toast.type === 'warning' ? '⚠️' : toast.type === 'info' ? 'ℹ️' : '⛔'}
+          </span>
+          <p className="text-xs font-semibold leading-relaxed">
             {toast.message}
           </p>
         </div>
@@ -1777,7 +1980,7 @@ export default function ActiveGame() {
       })()}
 
       {/* ── PLAYER PORTFOLIO INSPECTOR DRAWER ── */}
-      {inspectPlayerId && (() => {
+      {inspectPlayerId && !scanContext && (() => {
         const targetPlayer = game.players.find((p) => p.id === inspectPlayerId);
         if (!targetPlayer) return null;
         const ownedProps = game.properties.filter((p) => p.ownerId === targetPlayer.id);
@@ -1882,7 +2085,6 @@ export default function ActiveGame() {
                           onClick={() => {
                             setScannedProperty(prop);
                             setScanContext('INFO');
-                            setInspectPlayerId(null);
                           }}
                           className="px-3 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] active:scale-95 text-xs font-bold shrink-0 transition-all cursor-pointer"
                         >

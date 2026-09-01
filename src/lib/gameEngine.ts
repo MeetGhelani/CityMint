@@ -636,8 +636,7 @@ export function sellProperty(state: GameState, playerId: string, propertyId: str
 
   const updatedUndoStack = pushUndoSnapshot(state);
 
-  const val = getPropertyValue(property);
-  const refund = Math.floor(val / 2); // Half-value refund
+  const refund = property.purchasePrice; // Full purchase price refund when selling
 
   const updatedPlayers = state.players.map((p) => {
     if (p.id === playerId) {
@@ -660,7 +659,7 @@ export function sellProperty(state: GameState, playerId: string, propertyId: str
     sourcePlayerId: playerId,
     amount: refund,
     propertyId,
-    description: `${player.name} sold ${property.cityName} for ₹${refund} (Mortgage / Liquidation)`,
+    description: `${player.name} sold ${property.cityName} back to the Bank for ₹${refund}`,
     createdAt: new Date().toISOString(),
   };
 
@@ -687,6 +686,80 @@ export function sellProperty(state: GameState, playerId: string, propertyId: str
     if (newShortfall <= 0) {
       nextState = resolveDebt(nextState);
     }
+  }
+
+  return nextState;
+}
+
+/**
+ * Transfers a property directly from a debtor to a PLAYER creditor as debt payment.
+ * Used exclusively during BANKRUPTCY_REVIEW when the creditor is another player (not BANK).
+ *
+ * - Property ownership moves to the creditor (not unowned).
+ * - Property's purchasePrice is applied against the amountDue — no cash changes hands.
+ * - If purchasePrice >= remaining amountDue → debt fully cleared, game resumes ACTIVE.
+ * - If purchasePrice < remaining amountDue → shortfall reduced, debtor can pay rest with cash or more properties.
+ */
+export function transferPropertyAsDebtPayment(
+  state: GameState,
+  debtorId: string,
+  propertyId: string
+): GameState {
+  if (state.status !== 'BANKRUPTCY_REVIEW' || !state.activeDebt) return state;
+
+  const { creditorId, amountDue } = state.activeDebt;
+
+  // Only applies for player-to-player debt (not bank)
+  if (creditorId === 'BANK') return state;
+
+  const debtor = state.players.find((p) => p.id === debtorId);
+  const creditor = state.players.find((p) => p.id === creditorId);
+  const property = state.properties.find((p) => p.id === propertyId);
+
+  if (!debtor || !creditor || !property || property.ownerId !== debtorId) return state;
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+  const propValue = property.purchasePrice;
+  const newAmountDue = Math.max(0, amountDue - propValue);
+  const newShortfall = Math.max(0, newAmountDue - debtor.balance);
+
+  // Transfer property to creditor, reset level to 1 (distressed sale)
+  const updatedProperties = state.properties.map((p) =>
+    p.id === propertyId ? { ...p, ownerId: creditorId, level: 1 } : p
+  );
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'DEBT_PAYMENT',
+    sourcePlayerId: debtorId,
+    targetPlayerId: creditorId,
+    amount: propValue,
+    propertyId,
+    description: `${debtor.name} transferred ${property.cityName} to ${creditor.name} as debt payment (₹${propValue} credited toward ₹${amountDue} debt)`,
+    createdAt: new Date().toISOString(),
+  };
+
+  let nextState: GameState = {
+    ...state,
+    properties: updatedProperties,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    activeDebt: {
+      ...state.activeDebt,
+      amountDue: newAmountDue,
+      shortfall: newShortfall,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  // If property value covered the full remaining debt → resolve immediately (no cash deducted)
+  if (newAmountDue === 0) {
+    nextState = {
+      ...nextState,
+      status: 'ACTIVE',
+      activeDebt: undefined,
+    };
   }
 
   return nextState;
@@ -1082,6 +1155,7 @@ export function manualCorrectState(
   state: GameState,
   params: {
     playerId?: string;
+    nameChange?: string;
     propertyId?: string;
     balanceChange?: number;
     ownerIdChange?: string | 'UNOWNED';
@@ -1093,11 +1167,20 @@ export function manualCorrectState(
   
   let updatedPlayers = [...state.players];
   let updatedProperties = [...state.properties];
-  let logDesc = 'Manual admin correction applied:';
+  let logDesc = 'Manual admin correction applied:'
+
+  if (params.playerId && params.nameChange?.trim()) {
+    const pTarget = updatedPlayers.find((p) => p.id === params.playerId);
+    const newName = params.nameChange.trim();
+    updatedPlayers = updatedPlayers.map((p) =>
+      p.id === params.playerId ? { ...p, name: newName } : p
+    );
+    logDesc += ` Renamed "${pTarget?.name || ''}" → "${newName}".`;
+  }
 
   if (params.playerId && params.balanceChange !== undefined) {
-    const pTarget = state.players.find((p) => p.id === params.playerId);
-    updatedPlayers = state.players.map((p) => {
+    const pTarget = updatedPlayers.find((p) => p.id === params.playerId);
+    updatedPlayers = updatedPlayers.map((p) => {
       if (p.id === params.playerId) {
         return { ...p, balance: Math.max(0, p.balance + params.balanceChange!) };
       }
@@ -1107,8 +1190,8 @@ export function manualCorrectState(
   }
 
   if (params.playerId && params.jailStatusChange !== undefined) {
-    const pTarget = state.players.find((p) => p.id === params.playerId);
-    updatedPlayers = state.players.map((p) => {
+    const pTarget = updatedPlayers.find((p) => p.id === params.playerId);
+    updatedPlayers = updatedPlayers.map((p) => {
       if (p.id === params.playerId) {
         return { 
           ...p, 
@@ -1588,6 +1671,46 @@ export function upgradePropertyLevel(state: GameState, playerId: string, propert
   return {
     ...state,
     players: updatedPlayers,
+    properties: updatedProperties,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// Free +1 level upgrade awarded when a player lands on their own property (no cost)
+export function landOnOwnPropertyUpgrade(state: GameState, playerId: string, propertyId: string): GameState {
+  if (state.status !== 'ACTIVE') return state;
+
+  const player = state.players.find((p) => p.id === playerId);
+  const property = state.properties.find((p) => p.id === propertyId);
+
+  if (!player || !property || property.ownerId !== playerId || property.level >= 5) {
+    return state;
+  }
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const updatedProperties = state.properties.map((p) => {
+    if (p.id === propertyId) {
+      return { ...p, level: p.level + 1 };
+    }
+    return p;
+  });
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'MANUAL_CORRECTION',
+    sourcePlayerId: playerId,
+    amount: 0,
+    propertyId: propertyId,
+    description: `${player.name} landed on their own ${property.cityName} — free upgrade to Level ${property.level + 1}!`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
     properties: updatedProperties,
     transactions: [transaction, ...state.transactions],
     undoStack: updatedUndoStack,
