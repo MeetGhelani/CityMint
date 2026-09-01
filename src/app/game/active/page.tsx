@@ -23,6 +23,7 @@ import {
 } from '@/lib/gameEngine';
 import { localGetSetting, localGetGame, localSaveGame, localSaveHistory, localSaveSetting } from '@/lib/db';
 import { syncGameStateToSupabase, flushSyncQueue } from '@/lib/syncEngine';
+import QRCodeImage from '@/components/QRCodeImage';
 import { soundEffects } from '@/lib/soundEffects';
 import QRScanner from '@/components/QRScanner';
 import CityCard from '@/components/CityCard';
@@ -44,6 +45,10 @@ export default function ActiveGame() {
   const [scannedPlayer, setScannedPlayer] = useState<Player | null>(null);
   const [auctionProperty, setAuctionProperty] = useState<Property | null>(null);
   const [inspectPlayerId, setInspectPlayerId] = useState<string | null>(null);
+  const [selectedTxDetail, setSelectedTxDetail] = useState<GameTransaction | null>(null);
+  const [showQRCardsModal, setShowQRCardsModal] = useState(false);
+  const [qrSearchQuery, setQrSearchQuery] = useState('');
+  const [qrActiveTab, setQrActiveTab] = useState<'properties' | 'specials' | 'players'>('properties');
   
   // Action Card Drawing State
   const [drawnActionId, setDrawnActionId] = useState<string | null>(null);
@@ -582,15 +587,14 @@ export default function ActiveGame() {
 
         {/* Header Actions & Sync Indicator */}
         <div className="flex items-center gap-2">
-          <Link
-            href="/qr-cards"
-            target="_blank"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] border border-[var(--accent-mint)]/30 hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all text-[10px] font-bold uppercase tracking-wider"
+          <button
+            onClick={() => setShowQRCardsModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--accent-mint)]/10 text-[var(--accent-mint)] border border-[var(--accent-mint)]/30 hover:bg-[var(--accent-mint)]/20 active:scale-95 transition-all text-[10px] font-bold uppercase tracking-wider cursor-pointer"
             title="Open Scannable QR Cards Directory"
           >
             <QrCode className="w-3.5 h-3.5" />
             <span>QR Cards</span>
-          </Link>
+          </button>
 
           <div className="flex items-center gap-2 bg-[var(--bg-primary)]/80 px-3 py-1.5 rounded-full border border-[var(--border-custom)]">
             <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[var(--accent-mint)]' : 'bg-orange-400'}`} />
@@ -618,6 +622,7 @@ export default function ActiveGame() {
               }`}>
                 {game.players.map((player) => {
                   const isCurrent = player.id === game.currentPlayerId;
+                  const isBankrupt = player.status === 'BANKRUPT' || player.status === 'ELIMINATED';
                   const propsCount = game.properties.filter((p) => p.ownerId === player.id).length;
 
                   return (
@@ -628,7 +633,9 @@ export default function ActiveGame() {
                         setInspectPlayerId(player.id);
                       }}
                       className={`px-2 py-1.5 sm:px-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 min-w-0 ${
-                        isCurrent
+                        isBankrupt
+                          ? 'bg-red-950/30 border-red-500/30 opacity-70 hover:opacity-100'
+                          : isCurrent
                           ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)] shadow-sm ring-1 ring-[var(--accent-mint)]/50'
                           : 'bg-[var(--bg-secondary)] border-[var(--border-custom)] opacity-75 hover:opacity-100'
                       }`}
@@ -636,19 +643,26 @@ export default function ActiveGame() {
                     >
                       {/* Properly aligned avatar dot with pulse ring when current */}
                       <div className="relative shrink-0 flex items-center justify-center">
-                        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-white/20" style={{ backgroundColor: player.color }} />
-                        {isCurrent && (
+                        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-white/20" style={{ backgroundColor: isBankrupt ? '#ef4444' : player.color }} />
+                        {isCurrent && !isBankrupt && (
                           <span className="absolute -inset-1 rounded-full border border-[var(--accent-mint)] animate-pulse pointer-events-none" />
                         )}
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1">
-                          <span className="font-display font-extrabold text-[10px] sm:text-[11px] text-[var(--text-primary)] truncate">{player.name}</span>
+                          <span className={`font-display font-extrabold text-[10px] sm:text-[11px] truncate ${isBankrupt ? 'text-red-300 line-through' : 'text-[var(--text-primary)]'}`}>{player.name}</span>
                           {player.status === 'IN_JAIL' && <span className="text-[8px] shrink-0">🔒</span>}
+                          {isBankrupt && <span className="text-[8px] shrink-0">🚫</span>}
                         </div>
-                        <p className="text-[8.5px] sm:text-[9px] font-mono text-[var(--text-secondary)] truncate">
-                          ₹{player.balance >= 1000 ? `${(player.balance / 1000).toFixed(1)}k` : player.balance} · 🏢{propsCount}
+                        <p className="text-[8.5px] sm:text-[9px] font-mono truncate">
+                          {isBankrupt ? (
+                            <span className="text-red-400 font-bold uppercase">BANKRUPT</span>
+                          ) : (
+                            <span className="text-[var(--text-secondary)]">
+                              ₹{player.balance >= 1000 ? `${(player.balance / 1000).toFixed(1)}k` : player.balance} · 🏢{propsCount}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -816,16 +830,25 @@ export default function ActiveGame() {
               </div>
             </div>
 
-            {/* 6. 📷 Centered Scan QR Action Card */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex flex-col items-center justify-center text-center shadow-lg my-1">
-              <button
-                onClick={() => setShowScanner(true)}
-                className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center bg-gradient-to-tr from-[var(--accent-mint)] via-emerald-400 to-[var(--accent-mint)] text-[var(--bg-primary)] shadow-xl shadow-[var(--accent-mint)]/25 border-2 border-white/20 active:scale-95 hover:scale-105 transition-all font-display font-black text-[10px] uppercase gap-0.5"
-              >
-                <Camera className="w-5 h-5 stroke-[2.5]" />
-                <span>Scan QR</span>
-              </button>
-              <p className="text-[9px] text-[var(--text-secondary)] font-medium mt-2">
+            {/* 6. 📷 Centered Scan QR Action Card (Enlarged Hero Card) */}
+            <div className="py-7 sm:py-9 px-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] flex flex-col items-center justify-center text-center shadow-xl my-1 relative overflow-hidden group">
+              {/* Radial glow background */}
+              <div className="absolute inset-0 bg-radial from-[var(--accent-mint)]/10 via-transparent to-transparent pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity" />
+
+              <div className="relative">
+                {/* Subtle pulse ring behind button */}
+                <span className="absolute -inset-2 rounded-full border border-[var(--accent-mint)]/30 animate-ping opacity-40 pointer-events-none" />
+
+                <button
+                  onClick={() => setShowScanner(true)}
+                  className="w-22 h-22 sm:w-24 sm:h-24 rounded-full flex flex-col items-center justify-center bg-gradient-to-tr from-[var(--accent-mint)] via-emerald-400 to-[var(--accent-mint)] text-[var(--bg-primary)] shadow-2xl shadow-[var(--accent-mint)]/30 border-2 border-white/20 active:scale-95 hover:scale-105 transition-all font-display font-black text-xs uppercase gap-1 cursor-pointer"
+                >
+                  <Camera className="w-7 h-7 stroke-[2.4]" />
+                  <span>Scan QR</span>
+                </button>
+              </div>
+
+              <p className="text-[10.5px] sm:text-xs text-[var(--text-secondary)] font-semibold mt-3.5 tracking-wide">
                 Scan Player, Property, Start, Teleport, or Action QR
               </p>
             </div>
@@ -990,10 +1013,11 @@ export default function ActiveGame() {
           </div>
         )}
 
-        {/* TABS 3: Transaction Logs */}
+        {/* TABS 3: Transaction Logs (Fixed Header & Scrollable List) */}
         {activeTab === 'transactions' && (
-          <div className="h-full overflow-y-auto p-6 space-y-4">
-            <div className="flex justify-between items-center mb-2">
+          <div className="h-full flex flex-col">
+            {/* FIXED TOP HEADER: Title & Export CSV */}
+            <div className="flex-none p-5 sm:p-6 border-b border-[var(--border-custom)] bg-[var(--bg-primary)] flex justify-between items-center z-10">
               <div>
                 <h3 className="font-display font-extrabold text-lg text-[var(--text-primary)]">Activity Feed</h3>
                 <p className="text-xs text-[var(--text-secondary)]">Recorded game events ({game.transactions.length} events)</p>
@@ -1019,41 +1043,43 @@ export default function ActiveGame() {
                     link.click();
                     document.body.removeChild(link);
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-xs active:scale-95 transition-all shadow-sm"
+                  className="px-3.5 py-2 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-xs active:scale-95 transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
                   Export CSV
                 </button>
               )}
             </div>
-            
-            {game.transactions.length > 0 ? (
-              <div className="space-y-3">
-                {game.transactions.map((tx) => (
-                  <div 
+
+            {/* SCROLLABLE MIDDLE: Transaction Items */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-3 no-scrollbar">
+              {game.transactions.length > 0 ? (
+                game.transactions.map((tx) => (
+                  <div
                     key={tx.id}
-                    className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] text-xs space-y-2 shadow-sm"
+                    onClick={() => setSelectedTxDetail(tx)}
+                    className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] hover:border-[var(--accent-mint)]/40 active:scale-[0.99] transition-all cursor-pointer text-xs space-y-2 shadow-sm group"
                   >
                     <div className="flex justify-between items-center text-[10px] text-[var(--text-secondary)]">
-                      <span className="font-semibold uppercase tracking-wider text-[var(--accent-mint)]">
+                      <span className="font-semibold uppercase tracking-wider text-[var(--accent-mint)] group-hover:underline">
                         {tx.type}
                       </span>
-                      <span>Turn {tx.turnNumber}</span>
+                      <span>Turn {tx.turnNumber} · Click for details →</span>
                     </div>
                     <p className="text-[var(--text-primary)] font-medium leading-relaxed">
                       {tx.description}
                     </p>
-                    <span className="block text-[9px] text-[var(--text-secondary)] text-right">
+                    <span className="block text-[9px] text-[var(--text-secondary)] text-right font-mono">
                       {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-12">
-                <Landmark className="w-12 h-12 mb-3" />
-                <p className="text-sm">No transaction events recorded yet.</p>
-              </div>
-            )}
+                ))
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-12">
+                  <Landmark className="w-12 h-12 mb-3" />
+                  <p className="text-sm">No transaction events recorded yet.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2015,6 +2041,11 @@ export default function ActiveGame() {
                         🔒 In Jail
                       </span>
                     )}
+                    {(targetPlayer.status === 'BANKRUPT' || targetPlayer.status === 'ELIMINATED') && (
+                      <span className="text-[9px] font-extrabold uppercase text-red-400 bg-red-500/15 px-2 py-0.5 rounded border border-red-500/30">
+                        🚫 Bankrupt
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-2.5 text-xs text-[var(--text-secondary)] mt-1 font-semibold">
                     <span>Cash: <strong className="text-[var(--text-primary)]">₹{targetPlayer.balance.toLocaleString()}</strong></span>
@@ -2023,6 +2054,19 @@ export default function ActiveGame() {
                   </div>
                 </div>
               </div>
+
+              {/* Bankrupt & Eliminated Notice Banner */}
+              {(targetPlayer.status === 'BANKRUPT' || targetPlayer.status === 'ELIMINATED') && (
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-center space-y-1 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-center gap-2 text-red-400">
+                    <ShieldAlert className="w-5 h-5" />
+                    <span className="font-display font-extrabold text-sm uppercase tracking-wider">Player Bankrupt & Eliminated</span>
+                  </div>
+                  <p className="text-xs text-red-300/80 leading-relaxed">
+                    {targetPlayer.name} has declared bankruptcy and been eliminated from the match. This player cannot take turns, buy properties, or collect rent.
+                  </p>
+                </div>
+              )}
 
               {/* Title Bar */}
               <div className="flex items-center justify-between border-t border-[var(--border-custom)] pt-3">
@@ -2044,11 +2088,19 @@ export default function ActiveGame() {
 
               {/* Property Cards List */}
               {ownedProps.length === 0 ? (
-                <div className="p-6 text-center rounded-2xl bg-[var(--bg-primary)]/60 border border-dashed border-[var(--border-custom)] space-y-1">
-                  <Building className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-1 opacity-50" />
-                  <p className="font-display font-bold text-sm text-[var(--text-primary)]">{targetPlayer.name} owns 0 properties</p>
-                  <p className="text-xs text-[var(--text-secondary)]">Properties bought during the game will appear here.</p>
-                </div>
+                targetPlayer.status === 'BANKRUPT' || targetPlayer.status === 'ELIMINATED' ? (
+                  <div className="p-6 text-center rounded-2xl bg-red-500/5 border border-dashed border-red-500/20 space-y-1">
+                    <Building className="w-8 h-8 text-red-400 mx-auto mb-1 opacity-50" />
+                    <p className="font-display font-bold text-sm text-red-400">{targetPlayer.name} is Bankrupt</p>
+                    <p className="text-xs text-[var(--text-secondary)]">All properties were liquidated or transferred to creditors upon bankruptcy.</p>
+                  </div>
+                ) : (
+                  <div className="p-6 text-center rounded-2xl bg-[var(--bg-primary)]/60 border border-dashed border-[var(--border-custom)] space-y-1">
+                    <Building className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-1 opacity-50" />
+                    <p className="font-display font-bold text-sm text-[var(--text-primary)]">{targetPlayer.name} owns 0 properties</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Properties bought during the game will appear here.</p>
+                  </div>
+                )
               ) : (
                 <div className="space-y-2.5">
                   {ownedProps.map((prop) => {
@@ -2100,6 +2152,307 @@ export default function ActiveGame() {
           </div>
         );
       })()}
+
+      {/* ── TRANSACTION DETAIL EXPLANATION DRAWER ── */}
+      {selectedTxDetail && (() => {
+        const tx = selectedTxDetail;
+        const sourcePlayer = game.players.find((p) => p.id === tx.sourcePlayerId);
+        const targetPlayer = game.players.find((p) => p.id === tx.targetPlayerId);
+        const property = game.properties.find((p) => p.id === tx.propertyId);
+        const propGroup = property ? PROPERTY_GROUPS[property.groupId] : null;
+
+        const getTxTypeBadge = (type: string) => {
+          switch (type) {
+            case 'PURCHASE':
+              return { label: 'Property Purchase', color: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400', icon: '🏠' };
+            case 'RENT':
+              return { label: 'Rent Paid', color: 'bg-amber-500/15 border-amber-500/30 text-amber-400', icon: '💰' };
+            case 'START':
+              return { label: 'Pass Start Salary', color: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: '⚡' };
+            case 'TELEPORT':
+              return { label: 'Teleportation Fee', color: 'bg-sky-500/15 border-sky-500/30 text-sky-300', icon: '⚡' };
+            case 'JAIL_ENTER':
+              return { label: 'Sent to Jail', color: 'bg-rose-500/15 border-rose-500/30 text-rose-400', icon: '🔒' };
+            case 'JAIL_RELEASE':
+              return { label: 'Released from Jail', color: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400', icon: '🔓' };
+            case 'ACTION_CARD':
+              return { label: 'Action Card Event', color: 'bg-purple-500/15 border-purple-500/30 text-purple-300', icon: '🃏' };
+            case 'SALE':
+              return { label: 'Property Sale / Liquidation', color: 'bg-orange-500/15 border-orange-500/30 text-orange-300', icon: '🏷️' };
+            case 'DEBT_PAYMENT':
+              return { label: 'Debt Settlement', color: 'bg-rose-500/15 border-rose-500/30 text-rose-300', icon: '⚖️' };
+            case 'BANKRUPTCY':
+              return { label: 'Bankruptcy Declaration', color: 'bg-red-500/20 border-red-500/40 text-red-400', icon: '🚫' };
+            default:
+              return { label: 'Banker Adjustment', color: 'bg-blue-500/15 border-blue-500/30 text-blue-300', icon: '⚙️' };
+          }
+        };
+
+        const badge = getTxTypeBadge(tx.type);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[85vh] space-y-4 animate-in slide-in-from-bottom-5 duration-200 text-left relative">
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedTxDetail(null)}
+                className="absolute right-4 top-4 w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+              >
+                ✕
+              </button>
+
+              {/* Header Badge & Meta */}
+              <div className="pr-8 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${badge.color}`}>
+                    {badge.icon} {badge.label}
+                  </span>
+                  <span className="text-[10px] font-mono text-[var(--text-secondary)]">Turn {tx.turnNumber}</span>
+                </div>
+                <h3 className="font-display font-black text-lg text-[var(--text-primary)] leading-snug">
+                  Event Breakdown
+                </h3>
+              </div>
+
+              {/* Amount & Description Card */}
+              <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-custom)] pb-3">
+                  <span className="text-xs text-[var(--text-secondary)] font-semibold">Amount Transferred</span>
+                  <span className="font-display font-black text-xl text-[var(--accent-mint)]">
+                    {tx.amount > 0 ? `₹${tx.amount.toLocaleString()}` : 'Free / N/A'}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-extrabold tracking-wider text-[var(--text-muted)] block">Summary</span>
+                  <p className="text-[var(--text-primary)] text-xs leading-relaxed font-medium">
+                    {tx.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Participant Breakdown Grid */}
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-xl bg-[var(--bg-primary)]/70 border border-[var(--border-custom)]">
+                  <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] tracking-wider block mb-1">Source / Payer</span>
+                  <p className="font-display font-bold text-[var(--text-primary)] truncate">
+                    {sourcePlayer ? sourcePlayer.name : 'Bank / Game System'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[var(--bg-primary)]/70 border border-[var(--border-custom)]">
+                  <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] tracking-wider block mb-1">Recipient / Target</span>
+                  <p className="font-display font-bold text-[var(--text-primary)] truncate">
+                    {targetPlayer ? targetPlayer.name : 'Bank / Market'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Property Details (If Applicable) */}
+              {property && propGroup && (
+                <div className="p-3.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-3.5 h-3.5 rounded-full border border-white/20" style={{ backgroundColor: propGroup.color }} />
+                    <div>
+                      <h4 className="font-display font-bold text-xs text-[var(--text-primary)]">{property.cityName}</h4>
+                      <p className="text-[9px] text-[var(--text-secondary)]">Group: {propGroup.name} · Level {property.level}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-[var(--text-primary)]">₹{property.purchasePrice}</span>
+                </div>
+              )}
+
+              {/* Timestamp */}
+              <div className="text-[10px] text-[var(--text-muted)] text-right font-mono pt-1">
+                Recorded: {new Date(tx.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'medium' })}
+              </div>
+
+              <button
+                onClick={() => setSelectedTxDetail(null)}
+                className="w-full py-3 rounded-xl font-display font-bold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] active:scale-95 transition-all text-xs cursor-pointer"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── IN-APP SCANNABLE QR CARDS DIRECTORY MODAL ── */}
+      {showQRCardsModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-5 sm:p-6 shadow-2xl flex flex-col max-h-[88vh] text-left relative overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-start mb-4 pr-8">
+              <div>
+                <h3 className="font-display font-black text-xl text-[var(--text-primary)] flex items-center gap-2">
+                  <QrCode className="w-6 h-6 text-[var(--accent-mint)]" />
+                  QR Cards Directory
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Scan cards directly from screen or print for physical play.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowQRCardsModal(false)}
+                className="absolute right-4 top-4 w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Search & Tabs */}
+            <div className="space-y-3 mb-4 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
+                <input
+                  type="text"
+                  placeholder="Search city, group, or card..."
+                  value={qrSearchQuery}
+                  onChange={(e) => setQrSearchQuery(e.target.value)}
+                  className="w-full bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 pl-10 pr-4 text-xs text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                />
+              </div>
+
+              {/* Tab Selector */}
+              <div className="flex bg-[var(--bg-primary)] p-1 rounded-xl border border-[var(--border-custom)] text-xs font-semibold">
+                {[
+                  { id: 'properties', label: 'Properties 🏢' },
+                  { id: 'specials',   label: 'Special Zones ⚡' },
+                  { id: 'players',    label: 'Player Tokens 🔴' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setQrActiveTab(t.id as any)}
+                    className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                      qrActiveTab === t.id
+                        ? 'bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold shadow-sm'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Scrollable QR Cards Grid */}
+            <div className="flex-1 overflow-y-auto no-scrollbar pr-1 space-y-3">
+              {qrActiveTab === 'properties' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {game.properties
+                    .filter((p) =>
+                      p.cityName.toLowerCase().includes(qrSearchQuery.toLowerCase()) ||
+                      p.groupId.toLowerCase().includes(qrSearchQuery.toLowerCase())
+                    )
+                    .map((prop) => {
+                      const group = PROPERTY_GROUPS[prop.groupId];
+                      return (
+                        <div
+                          key={prop.id}
+                          className="p-3 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] flex flex-col items-center text-center space-y-2 relative shadow-md"
+                        >
+                          <span
+                            className="w-full py-1 rounded-lg text-[10px] font-extrabold uppercase text-white tracking-wider truncate"
+                            style={{ backgroundColor: group?.color || '#333' }}
+                          >
+                            {prop.cityName}
+                          </span>
+                          <QRCodeImage
+                            value={`CM-PROP-${prop.id}`}
+                            size={120}
+                            fgColor="#FFFFFF"
+                            bgColor="#0A0B10"
+                            className="rounded-xl border border-[var(--border-custom)] p-1"
+                          />
+                          <div className="text-[9px] font-mono text-[var(--text-secondary)] space-y-0.5">
+                            <p className="font-bold text-[var(--text-primary)]">Buy: ₹{prop.purchasePrice}</p>
+                            <p>Base Rent: ₹{prop.baseRent}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+
+              {qrActiveTab === 'specials' && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { id: 'CM-SPECIAL-START', name: 'START / PASS GO', desc: 'Collect ₹2,000 when passing Start', icon: '🏁', color: '#10B981' },
+                    { id: 'CM-SPECIAL-TELEPORT', name: 'TELEPORT HUB', desc: 'Pay ₹500 to teleport anywhere', icon: '⚡', color: '#3B82F6' },
+                    { id: 'CM-SPECIAL-JAIL', name: 'GO TO JAIL', desc: 'Go directly to Jail, do not pass Start', icon: '⛓️', color: '#EF4444' },
+                  ]
+                    .filter((s) => s.name.toLowerCase().includes(qrSearchQuery.toLowerCase()))
+                    .map((spec) => (
+                      <div
+                        key={spec.id}
+                        className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] flex flex-col items-center text-center space-y-2 shadow-md"
+                      >
+                        <span
+                          className="w-full py-1 rounded-lg text-[10px] font-extrabold uppercase text-white tracking-wider flex items-center justify-center gap-1"
+                          style={{ backgroundColor: spec.color }}
+                        >
+                          <span>{spec.icon}</span>
+                          <span>{spec.name}</span>
+                        </span>
+                        <QRCodeImage
+                          value={spec.id}
+                          size={130}
+                          fgColor="#FFFFFF"
+                          bgColor="#0A0B10"
+                          className="rounded-xl border border-[var(--border-custom)] p-1"
+                        />
+                        <p className="text-[9px] text-[var(--text-secondary)]">{spec.desc}</p>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {qrActiveTab === 'players' && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {game.players.map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-3 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] flex flex-col items-center text-center space-y-2 shadow-md"
+                    >
+                      <span
+                        className="w-full py-1 rounded-lg text-[10px] font-extrabold uppercase text-white tracking-wider truncate"
+                        style={{ backgroundColor: p.color }}
+                      >
+                        {p.name}
+                      </span>
+                      <QRCodeImage
+                        value={p.playerCode || `CM-PLAYER-${p.id}`}
+                        size={120}
+                        fgColor="#FFFFFF"
+                        bgColor="#0A0B10"
+                        className="rounded-xl border border-[var(--border-custom)] p-1"
+                      />
+                      <p className="text-[9px] font-mono text-[var(--text-secondary)] truncate">
+                        Code: {p.playerCode || p.id}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer action */}
+            <div className="pt-3 border-t border-[var(--border-custom)] mt-3 flex justify-between items-center shrink-0">
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">CityMint Local QR Engine</span>
+              <button
+                onClick={() => setShowQRCardsModal(false)}
+                className="px-4 py-2 rounded-xl bg-[var(--bg-elevated)] text-[var(--text-primary)] font-bold text-xs hover:bg-[var(--bg-primary)] active:scale-95 transition-all cursor-pointer"
+              >
+                Close Directory
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
