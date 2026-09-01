@@ -145,28 +145,23 @@ export default function Home() {
             </Link>
           )}
 
-          {/* Animated Neon Ambient Pulse Glow Ring for Low Brightness Visibility */}
-          <div className="relative group w-full">
-            <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 opacity-75 blur-md animate-pulse pointer-events-none" />
-            
-            <Link
-              href="/game/setup"
-              className="relative w-full p-4.5 rounded-3xl bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 text-slate-950 font-display font-bold shadow-[0_0_25px_rgba(0,229,160,0.5)] flex items-center justify-between active:scale-[0.98] transition-all overflow-hidden border-2 border-emerald-100/40"
-            >
-              <div className="flex items-center gap-3.5 relative z-10">
-                <div className="w-12 h-12 rounded-2xl bg-slate-950/20 border border-slate-950/20 flex items-center justify-center text-2xl shadow-inner shrink-0">
-                  🎲
-                </div>
-                <div>
-                  <h3 className="font-black text-base tracking-wide leading-tight">NEW GAME SETUP</h3>
-                  <p className="text-[10px] font-bold text-slate-900/90">Start a new CityMint game</p>
-                </div>
+          <Link
+            href="/game/setup"
+            className="group relative w-full p-4.5 rounded-3xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-500 text-slate-950 font-display font-bold shadow-xl shadow-emerald-500/20 flex items-center justify-between active:scale-[0.98] transition-all overflow-hidden border border-emerald-300/30"
+          >
+            <div className="flex items-center gap-3.5 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-slate-950/15 border border-slate-950/10 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                🎲
               </div>
-              <div className="w-8.5 h-8.5 rounded-full bg-slate-950/20 border border-slate-950/10 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0 shadow-xs">
-                <ChevronRight className="w-5 h-5 text-slate-950" />
+              <div>
+                <h3 className="font-black text-base tracking-wide leading-tight">NEW GAME SETUP</h3>
+                <p className="text-[10px] font-bold text-slate-900/80">Start a new CityMint game</p>
               </div>
-            </Link>
-          </div>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-slate-950/20 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
+              <ChevronRight className="w-5 h-5 text-slate-950" />
+            </div>
+          </Link>
         </div>
 
         {/* ── 3 MAIN QUICK ACCESS CARDS ── */}
@@ -207,25 +202,22 @@ export default function Home() {
               </div>
             </button>
 
-            {/* 3. QR Cards Card with Neon Pulse Glow */}
-            <div className="relative group h-36">
-              <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-b from-cyan-400 to-teal-500 opacity-50 blur-sm animate-pulse pointer-events-none" />
-              <Link
-                href="/qr-cards"
-                className="relative p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#0F2238] to-[#0A1624] border border-cyan-400/50 flex flex-col justify-between h-36 text-left group hover:border-cyan-300 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.35)] cursor-pointer overflow-hidden"
-              >
-                <div className="w-9 h-9 rounded-xl bg-cyan-400/25 border border-cyan-300/40 flex items-center justify-center text-lg mb-2 shadow-[0_0_10px_rgba(6,182,212,0.4)]">
-                  🔲
-                </div>
-                <div>
-                  <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">QR CARDS</h4>
-                  <p className="text-[9px] text-cyan-200/80 leading-tight mt-1">Manage player &amp; property cards</p>
-                </div>
-                <div className="w-6 h-6 rounded-full bg-cyan-400/25 border border-cyan-300/30 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
-                  <ChevronRight className="w-3.5 h-3.5 text-cyan-200" />
-                </div>
-              </Link>
-            </div>
+            {/* 3. QR Cards Card */}
+            <Link
+              href="/qr-cards"
+              className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#0F2238] to-[#0A1624] border border-cyan-500/20 flex flex-col justify-between h-36 text-left group hover:border-cyan-500/40 active:scale-95 transition-all shadow-lg shadow-cyan-950/30 cursor-pointer relative overflow-hidden"
+            >
+              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-lg mb-2">
+                🔲
+              </div>
+              <div>
+                <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">QR CARDS</h4>
+                <p className="text-[9px] text-cyan-200/60 leading-tight mt-1">Manage player &amp; property cards</p>
+              </div>
+              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
+                <ChevronRight className="w-3.5 h-3.5 text-cyan-300" />
+              </div>
+            </Link>
 
           </div>
         </div>
