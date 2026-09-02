@@ -20,7 +20,8 @@ import {
   endGame, saveGameStateToStorage, loadGameStateFromStorage,
   executeTargetedPoliceRaid, executeTargetedPropertyUpgrade, executePropertySwap,
   computeMatchAnalytics, executeAuctionWin, upgradePropertyLevel, landOnOwnPropertyUpgrade,
-  transferPropertyAsDebtPayment
+  transferPropertyAsDebtPayment, executeSeizeProperty, executeClaimUnownedProperty,
+  executeTargetedPropertyDowngrade
 } from '@/lib/gameEngine';
 import { localGetSetting, localGetGame, localSaveGame, localSaveHistory, localSaveSetting } from '@/lib/db';
 import { syncGameStateToSupabase, flushSyncQueue } from '@/lib/syncEngine';
@@ -64,6 +65,11 @@ export default function ActiveGame() {
   const [swapTargetPlayerId, setSwapTargetPlayerId] = useState<string>('');
   const [swapPropAId, setSwapPropAId] = useState<string>('');
   const [swapPropBId, setSwapPropBId] = useState<string>('');
+  const [seizeTargetPlayerId, setSeizeTargetPlayerId] = useState<string>('');
+  const [seizePropertyId, setSeizePropertyId] = useState<string>('');
+  const [eminentDomainPropertyId, setEminentDomainPropertyId] = useState<string>('');
+  const [downgradeTargetPlayerId, setDowngradeTargetPlayerId] = useState<string>('');
+  const [downgradePropertyId, setDowngradePropertyId] = useState<string>('');
 
   // Manual Adjustments Admin Panel State
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -588,6 +594,35 @@ export default function ActiveGame() {
     setSwapPropBId('');
   };
 
+  const handleApplySeizeProperty = () => {
+    if (!game || !game.currentPlayerId || !seizePropertyId) return;
+    const nextState = executeSeizeProperty(game, game.currentPlayerId, seizePropertyId);
+    updateGameState(nextState);
+    setDrawnActionId(null);
+    setScanContext(null);
+    setSeizeTargetPlayerId('');
+    setSeizePropertyId('');
+  };
+
+  const handleApplyEminentDomain = () => {
+    if (!game || !game.currentPlayerId || !eminentDomainPropertyId) return;
+    const nextState = executeClaimUnownedProperty(game, game.currentPlayerId, eminentDomainPropertyId);
+    updateGameState(nextState);
+    setDrawnActionId(null);
+    setScanContext(null);
+    setEminentDomainPropertyId('');
+  };
+
+  const handleApplyPropertyDowngrade = () => {
+    if (!game || !game.currentPlayerId || !downgradePropertyId) return;
+    const nextState = executeTargetedPropertyDowngrade(game, game.currentPlayerId, downgradePropertyId);
+    updateGameState(nextState);
+    setDrawnActionId(null);
+    setScanContext(null);
+    setDowngradeTargetPlayerId('');
+    setDowngradePropertyId('');
+  };
+
   // Debt settlement operations
   const handleDebtorSellProp = (propId: string) => {
     if (!activeDebtor || !game.activeDebt) return;
@@ -938,7 +973,7 @@ export default function ActiveGame() {
                           >
                             <span>{prop.cityName}</span>
                             <span className="bg-black/30 px-1 py-0.1 rounded text-[7.5px] font-mono">Lv{prop.level}</span>
-                            {isSetComplete && <span title="Monopoly Set Bonus Active (+1 Level)">✨</span>}
+                            {isSetComplete && <span title="CityMint Set Bonus Active (+1 Level)">✨</span>}
                           </div>
                         );
                       })}
@@ -1787,8 +1822,302 @@ export default function ActiveGame() {
                 </div>
               )}
 
+              {/* Title Deed Seizure (act-29) */}
+              {drawnActionId === 'act-29' && (() => {
+                const allOpponentProps = game.properties.filter(
+                  (p) => p.ownerId !== null && p.ownerId !== game.currentPlayerId && p.ownerId !== 'BANK'
+                );
+
+                if (allOpponentProps.length === 0) {
+                  return (
+                    <div className="space-y-3 mb-4 text-left">
+                      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        <p className="text-xs font-bold mb-1">⚠️ No Opponent Properties Available</p>
+                        <p className="text-[11px] opacity-90">
+                          None of your opponents currently own any properties on the board to seize.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleApplyActionCard}
+                        className="w-full py-3.5 rounded-xl font-display font-bold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-primary)] active:scale-[0.98] transition-all cursor-pointer text-xs"
+                      >
+                        Dismiss &amp; Log Action Card ✕
+                      </button>
+                    </div>
+                  );
+                }
+
+                // Find lowest available level owned by opponents (Level 1, or Level 2, etc.)
+                const minLevel = Math.min(...allOpponentProps.map((p) => p.level));
+                const isFallbackLevel = minLevel > 1;
+
+                const eligibleOpponents = game.players.filter(
+                  (p) =>
+                    p.id !== game.currentPlayerId &&
+                    p.status !== 'BANKRUPT' &&
+                    p.status !== 'ELIMINATED' &&
+                    game.properties.some((pr) => pr.ownerId === p.id && pr.level === minLevel)
+                );
+
+                const targetProperties = seizeTargetPlayerId
+                  ? game.properties.filter((p) => p.ownerId === seizeTargetPlayerId && p.level === minLevel)
+                  : [];
+
+                return (
+                  <div className="space-y-3 mb-4 text-left">
+                    {isFallbackLevel && (
+                      <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[10.5px] font-medium flex items-center gap-1.5">
+                        <span>ℹ️</span>
+                        <span>No Level 1 properties found — dynamically adapted to lowest available (Level {minLevel}).</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
+                        1. Select Target Opponent:
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={seizeTargetPlayerId}
+                          onChange={(e) => {
+                            setSeizeTargetPlayerId(e.target.value);
+                            setSeizePropertyId('');
+                          }}
+                          className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                        >
+                          <option value="">-- Select Opponent --</option>
+                          {eligibleOpponents.map((p) => {
+                            const count = game.properties.filter((pr) => pr.ownerId === p.id && pr.level === minLevel).length;
+                            return (
+                              <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+                                {p.name} ({count} Level-{minLevel} {count === 1 ? 'property' : 'properties'})
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {seizeTargetPlayerId && (
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
+                          2. Select Level-{minLevel} Property to Seize:
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={seizePropertyId}
+                            onChange={(e) => setSeizePropertyId(e.target.value)}
+                            className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                          >
+                            <option value="">-- Select Property --</option>
+                            {targetProperties.map((p) => (
+                              <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+                                {p.cityName} (Level {p.level} · Valued ₹{p.purchasePrice.toLocaleString()})
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      disabled={!seizeTargetPlayerId || !seizePropertyId}
+                      onClick={handleApplySeizeProperty}
+                      className="w-full py-3.5 rounded-xl font-display font-bold bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md mt-2 cursor-pointer text-xs uppercase tracking-wider"
+                    >
+                      Seize Property Deed 🏠
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {/* Eminent Domain (act-22) */}
+              {drawnActionId === 'act-22' && (() => {
+                const unownedProps = game.properties.filter((p) => p.ownerId === null);
+
+                if (unownedProps.length === 0) {
+                  return (
+                    <div className="space-y-3 mb-4 text-left">
+                      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        <p className="text-xs font-bold mb-1">⚠️ All Properties Owned</p>
+                        <p className="text-[11px] opacity-90">
+                          All properties on the board are already owned. No unowned property is available to claim.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleApplyActionCard}
+                        className="w-full py-3.5 rounded-xl font-display font-bold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-primary)] active:scale-[0.98] transition-all cursor-pointer text-xs"
+                      >
+                        Dismiss &amp; Log Action Card ✕
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3 mb-4 text-left">
+                    <div>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
+                        Select Unowned Property to Claim:
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={eminentDomainPropertyId}
+                          onChange={(e) => setEminentDomainPropertyId(e.target.value)}
+                          className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                        >
+                          <option value="">-- Choose Unowned Property --</option>
+                          {unownedProps.map((p) => {
+                            const group = PROPERTY_GROUPS[p.groupId];
+                            return (
+                              <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+                                {p.cityName} ({group?.name || p.groupId} · Base ₹{p.purchasePrice.toLocaleString()})
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <button
+                      disabled={!eminentDomainPropertyId}
+                      onClick={handleApplyEminentDomain}
+                      className="w-full py-3.5 rounded-xl font-display font-bold bg-teal-600 hover:bg-teal-500 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md mt-2 cursor-pointer text-xs uppercase tracking-wider"
+                    >
+                      Claim Free Property 🏛️
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {/* Property Downgrade (act-23) */}
+              {drawnActionId === 'act-23' && (() => {
+                const oppsWithDowngradable = game.players.filter(
+                  (p) =>
+                    p.id !== game.currentPlayerId &&
+                    p.status !== 'BANKRUPT' &&
+                    p.status !== 'ELIMINATED' &&
+                    game.properties.some((pr) => pr.ownerId === p.id && pr.level > 1)
+                );
+
+                if (oppsWithDowngradable.length === 0) {
+                  return (
+                    <div className="space-y-3 mb-4 text-left">
+                      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        <p className="text-xs font-bold mb-1">⚠️ No Downgradable Properties</p>
+                        <p className="text-[11px] opacity-90">
+                          None of your opponents currently own any upgraded properties (level 2+) to downgrade.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleApplyActionCard}
+                        className="w-full py-3.5 rounded-xl font-display font-bold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] hover:bg-[var(--bg-primary)] active:scale-[0.98] transition-all cursor-pointer text-xs"
+                      >
+                        Dismiss &amp; Log Action Card ✕
+                      </button>
+                    </div>
+                  );
+                }
+
+                const propCounts = oppsWithDowngradable.map(
+                  (p) => game.properties.filter((pr) => pr.ownerId === p.id).length
+                );
+                const maxPropsAvailable = Math.max(...propCounts);
+                
+                const reqThreshold = maxPropsAvailable >= 3 ? 3 : maxPropsAvailable >= 2 ? 2 : 1;
+                const isFallbackThreshold = reqThreshold < 3;
+
+                const eligibleOpponents = oppsWithDowngradable.filter(
+                  (p) => game.properties.filter((pr) => pr.ownerId === p.id).length >= reqThreshold
+                );
+
+                const selectedOpponentProps = downgradeTargetPlayerId
+                  ? game.properties.filter((p) => p.ownerId === downgradeTargetPlayerId && p.level > 1)
+                  : [];
+
+                const maxLevel = selectedOpponentProps.length > 0
+                  ? Math.max(...selectedOpponentProps.map((p) => p.level))
+                  : 1;
+
+                const targetProperties = selectedOpponentProps
+                  .filter((p) => p.level === maxLevel)
+                  .sort((a, b) => b.purchasePrice - a.purchasePrice);
+
+                return (
+                  <div className="space-y-3 mb-4 text-left">
+                    {isFallbackThreshold && (
+                      <div className="p-2.5 rounded-xl bg-sky-500/10 border border-purple-500/20 text-sky-300 text-[10.5px] font-medium flex items-center gap-1.5">
+                        <span>ℹ️</span>
+                        <span>No opponents own 3+ properties — dynamically adapted to opponents with {reqThreshold}+ properties.</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
+                        1. Select Target Opponent ({reqThreshold}+ properties):
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={downgradeTargetPlayerId}
+                          onChange={(e) => {
+                            setDowngradeTargetPlayerId(e.target.value);
+                            setDowngradePropertyId('');
+                          }}
+                          className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                        >
+                          <option value="">-- Choose Target Opponent --</option>
+                          {eligibleOpponents.map((p) => {
+                            const count = game.properties.filter((pr) => pr.ownerId === p.id).length;
+                            return (
+                              <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+                                {p.name} ({count} {count === 1 ? 'property' : 'properties'} owned)
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {downgradeTargetPlayerId && (
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
+                          2. Select Highest-Level Property to Downgrade (Level {maxLevel}):
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={downgradePropertyId}
+                            onChange={(e) => setDowngradePropertyId(e.target.value)}
+                            className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                          >
+                            <option value="">-- Choose Property --</option>
+                            {targetProperties.map((p) => (
+                              <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+                                {p.cityName} (Level {p.level} → Level {p.level - 1} · Valued ₹{p.purchasePrice.toLocaleString()})
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      disabled={!downgradeTargetPlayerId || !downgradePropertyId}
+                      onClick={handleApplyPropertyDowngrade}
+                      className="w-full py-3.5 rounded-xl font-display font-bold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md mt-2 cursor-pointer text-xs uppercase tracking-wider"
+                    >
+                      Downgrade Opponent Property 📉
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* Standard Action Cards — Proceed Button */}
-              {drawnActionId !== 'act-17' && drawnActionId !== 'act-9' && drawnActionId !== 'act-19' && (
+              {drawnActionId !== 'act-17' && drawnActionId !== 'act-9' && drawnActionId !== 'act-19' && drawnActionId !== 'act-22' && drawnActionId !== 'act-23' && drawnActionId !== 'act-29' && (
                 <button
                   onClick={handleApplyActionCard}
                   className={`w-full py-3.5 rounded-xl font-display font-bold text-sm ${proceedBg} ${proceedText} active:scale-[0.98] transition-all shadow-lg cursor-pointer`}
@@ -2372,7 +2701,7 @@ export default function ActiveGame() {
                               <h4 className="font-display font-extrabold text-sm text-[var(--text-primary)] truncate">
                                 {prop.cityName}
                               </h4>
-                              {isSetComplete && <span title="Monopoly Set Bonus Active (+1 Level)">✨</span>}
+                              {isSetComplete && <span title="CityMint Set Bonus Active (+1 Level)">✨</span>}
                             </div>
                             <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
                               Level {prop.level} · Rent: <strong className="text-[var(--accent-mint)]">₹{rent.toLocaleString()}</strong>

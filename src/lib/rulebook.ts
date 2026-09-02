@@ -33,7 +33,7 @@ export const RULEBOOK_SECTIONS: RuleSection[] = [
     category: 'Getting Started',
     summary: 'Introduction to the smart hybrid physical & digital board game.',
     content: [
-      'Step 1: CityMint combines a physical Monopoly-style board game with a single digital Banker web app.',
+      'Step 1: CityMint combines a physical board game with a single digital Banker web app.',
       'Step 2: One phone or tablet acts as the Banker device to automatically track cash balances, property ownership, rent multipliers, and match logs.',
       'Step 3: Players do NOT need individual app accounts — the Banker scans physical card QR codes on their behalf.',
       'Step 4: Roll physical dice, move physical tokens on the board, and let the Banker app handle all math, auctions, and rent calculations!'
@@ -79,11 +79,11 @@ export const RULEBOOK_SECTIONS: RuleSection[] = [
     id: 'rent_inspection',
     title: '5. Checking Rent Rates & Rent Calculations',
     category: 'Properties',
-    summary: 'Inspecting property rent rates without paying, monopoly set bonuses, and free upgrades.',
+    summary: 'Inspecting property rent rates without paying, CityMint set bonuses, and free upgrades.',
     content: [
       'Step 1: Inspect Rent Info Without Paying 🔍: If any player wants to check the current rent level, base rent, or upgrade price of a property, tell the Banker to scan its Property QR code. The app displays full property details, rent breakdown, and level multiplier. The Banker can simply inspect the info and tap the Close button (✕) without clicking "Pay Rent" or "Buy Property"!',
       'Step 2: Rent Multipliers: Level 1 = 1.00×, Level 2 = 1.40×, Level 3 = 1.80×, Level 4 = 2.50×, Level 5 (MAX) = 3.50×.',
-      'Step 3: Monopoly Set Auto-Upgrade 🎉: When a player buys or wins the FINAL missing property to complete a color set (e.g., acquiring the 3rd of 3 cities in a group), ALL properties in that color group automatically receive a +1 Level Upgrade (up to Level 5 max) and the LATEST activity banner announces the set completion and level upgrades!',
+      'Step 3: CityMint Set Auto-Upgrade 🎉: When a player buys or wins the FINAL missing property to complete a color set (e.g., acquiring the 3rd of 3 cities in a group), ALL properties in that color group automatically receive a +1 Level Upgrade (up to Level 5 max) and the LATEST activity banner announces the set completion and level upgrades!',
       'Step 4: Free Self-Landing Upgrade: When landing on your OWN property, you receive a FREE +1 Level Upgrade (up to Level 5 max) at zero cost!'
     ]
   },
@@ -95,8 +95,10 @@ export const RULEBOOK_SECTIONS: RuleSection[] = [
     content: [
       'Step 1: When landing on an "Action Card" board space, draw a physical Action Card (Cards 1 to 30).',
       'Step 2: Scan the card\'s Action QR code (e.g. CM-ACTION-21) on the Banker app.',
-      'Step 3: The app displays an Action Draw Modal with color category badges, exact effect details, and balance impact preview (Gain / Loss / Neutral).',
-      'Step 4: Categories include Money (Tax Refund, Birthday Bash), Property (Eminent Domain, Renovation Collapse, Property Downgrade), Jail (Police Raid, Pardons), Movement (Express Highway, Metro Express, Reverse Detour), and Special (Title Deed Seizure, Rent Immunity Shield).'
+      'Step 3: Interactive Selection & Dropdowns 🎯: For targeted cards (Eminent Domain, Property Downgrade, Title Deed Seizure, Property Swap, Police Raid), the Banker App opens interactive dropdowns to select target opponents and specific properties.',
+      'Step 4: Dynamic Level & Threshold Fallbacks ⚡: If exact conditions are unavailable (e.g., no Level 1 properties for Title Deed Seizure or no 3+ property opponents for Property Downgrade), the app dynamically adapts to the next available level/threshold (Level 2+, 2+ or 1+ properties).',
+      'Step 5: Tie-Breaking Rules 🏆: Whenever multiple candidate properties share the same highest or lowest level, ties are deterministically broken by choosing the property with the highest base purchase price.',
+      'Step 6: Categories include Money (Tax Refund, Birthday Bash), Property (Eminent Domain, Renovation Collapse, Property Downgrade), Jail (Police Raid, Pardons), Movement (Express Highway, Metro Express, Reverse Detour), and Special (Title Deed Seizure, Rent Immunity Shield).'
     ]
   },
   {
@@ -266,38 +268,38 @@ export const ACTION_CARDS_GUIDE: ActionCardRule[] = [
   { id: 'act-1', code: 'CM-ACTION-1', name: 'Tax Refund', category: 'Money', summary: 'Bank Bonus', effect: 'Receive ₹500 from the Bank.' },
   { id: 'act-2', code: 'CM-ACTION-2', name: 'Traffic Fine', category: 'Money', summary: 'City Penalty', effect: 'Pay ₹300 fine to the Bank.' },
   { id: 'act-3', code: 'CM-ACTION-3', name: 'Birthday Bash', category: 'Money', summary: 'Player Gift', effect: 'Collect ₹200 from each player.' },
-  { id: 'act-4', code: 'CM-ACTION-4', name: 'Inheritance Reward', category: 'Money', summary: 'Bank Windfall', effect: 'Receive ₹1,000 from the Bank.' },
-  { id: 'act-5', code: 'CM-ACTION-5', name: 'Community Feast', category: 'Money', summary: 'Charity Gift', effect: 'Pay ₹150 to each player.' },
-  { id: 'act-6', code: 'CM-ACTION-6', name: 'Stock Market Crash', category: 'Money', summary: 'Financial Loss', effect: 'Pay ₹400 fine to the Bank.' },
-  { id: 'act-7', code: 'CM-ACTION-7', name: 'Startup Bonus', category: 'Money', summary: 'Venture Capital', effect: 'Receive ₹750 from the Bank.' },
-  { id: 'act-8', code: 'CM-ACTION-8', name: 'Festival Donations', category: 'Money', summary: 'Community Event', effect: 'Pay ₹100 to each player.' },
-  { id: 'act-9', code: 'CM-ACTION-9', name: 'Loan Approved', category: 'Money', summary: 'Bank Loan', effect: 'Receive ₹600 from the Bank, but pay it back next turn (₹600 auto-deducted at turn end).' },
-  { id: 'act-10', code: 'CM-ACTION-10', name: 'Dividend Payout', category: 'Money', summary: 'Portfolio Return', effect: 'Receive ₹100 for each property you own.' },
-  { id: 'act-11', code: 'CM-ACTION-11', name: 'Infrastructure Levy', category: 'Property', summary: 'Property Maintenance', effect: 'Pay ₹150 for each property you own.' },
-  { id: 'act-12', code: 'CM-ACTION-12', name: 'Development Boom', category: 'Property', summary: 'Free City Upgrade', effect: 'Upgrade one of your properties by +1 level for free.' },
-  { id: 'act-13', code: 'CM-ACTION-13', name: 'Renovation Collapse', category: 'Property', summary: 'City Damage', effect: 'Your highest-level property drops by 1 level.' },
-  { id: 'act-14', code: 'CM-ACTION-14', name: 'Speeding Fine', category: 'Jail', summary: 'Police Warrant', effect: 'Go directly to Jail. Do not pass Start.' },
-  { id: 'act-15', code: 'CM-ACTION-15', name: 'Pardon Card', category: 'Jail', summary: 'Bail Waiver', effect: 'Get Out of Jail Free! Keep this card until needed.' },
-  { id: 'act-16', code: 'CM-ACTION-16', name: 'Police Raid', category: 'Jail', summary: 'Target Warrant', effect: 'Send any one player directly to Jail.' },
-  { id: 'act-17', code: 'CM-ACTION-17', name: 'Free Transit', category: 'Movement', summary: 'Warp Pass', effect: 'Move to any Teleport space for free.' },
-  { id: 'act-18', code: 'CM-ACTION-18', name: 'Road Block', category: 'Movement', summary: 'Turn Delay', effect: 'Skip your next turn.' },
-  { id: 'act-19', code: 'CM-ACTION-19', name: 'Express Highway', category: 'Movement', summary: 'Board Warp', effect: 'Advance 3 spaces forward immediately.' },
-  { id: 'act-20', code: 'CM-ACTION-20', name: 'Detour', category: 'Movement', summary: 'Reverse Step', effect: 'Move 2 spaces backward.' },
-  { id: 'act-21', code: 'CM-ACTION-21', name: 'Urban Renewal', category: 'Property', summary: 'Target Upgrade', effect: 'Select any player\'s property and upgrade it by +1 level.' },
-  { id: 'act-22', code: 'CM-ACTION-22', name: 'Eminent Domain', category: 'Property', summary: 'Forced Transfer', effect: 'Target opponent must sell one of their un-upgraded properties to you at base valuation price.' },
-  { id: 'act-23', code: 'CM-ACTION-23', name: 'Property Downgrade', category: 'Property', summary: 'Opponent Damage', effect: 'Select an opponent\'s property and downgrade its level by 1.' },
-  { id: 'act-24', code: 'CM-ACTION-24', name: 'Metro Express', category: 'Movement', summary: 'Unowned Warp', effect: 'Fly to the nearest unowned property on the board.' },
-  { id: 'act-25', code: 'CM-ACTION-25', name: 'Reverse Detour', category: 'Movement', summary: 'Start Warp', effect: 'Retreat backward to the START tile and collect ₹2,000 salary.' },
-  { id: 'act-26', code: 'CM-ACTION-26', name: 'Mass Amnesty', category: 'Jail', summary: 'Global Pardon', effect: 'All players currently in Jail are released immediately for free!' },
-  { id: 'act-27', code: 'CM-ACTION-27', name: 'Curfew Warrant', category: 'Jail', summary: 'Richest Penalty', effect: 'The player with the highest cash balance goes to Jail immediately.' },
-  { id: 'act-28', code: 'CM-ACTION-28', name: 'Title Deed Seizure', category: 'Special', summary: 'Swap Property', effect: 'Swap ownership of one of your Level 1 properties with an opponent\'s Level 1 property.' },
-  { id: 'act-29', code: 'CM-ACTION-29', name: 'Rent Immunity Shield', category: 'Special', summary: 'Rent Block', effect: 'You are immune to paying rent on the next opponent property you land on.' },
-  { id: 'act-30', code: 'CM-ACTION-30', name: 'City Tax Auditor', category: 'Special', summary: 'Monopoly Fine', effect: 'Pay ₹200 for every completed monopoly set you own.' }
+  { id: 'act-4', code: 'CM-ACTION-4', name: 'Infrastructure Levy', category: 'Property', summary: 'Property Maintenance', effect: 'Pay ₹150 for each property you own.' },
+  { id: 'act-5', code: 'CM-ACTION-5', name: 'Speeding Fine', category: 'Jail', summary: 'Police Warrant', effect: 'Go directly to Jail.' },
+  { id: 'act-6', code: 'CM-ACTION-6', name: 'Pardon Card', category: 'Jail', summary: 'Bail Waiver', effect: 'Get Out of Jail Free (keep this card).' },
+  { id: 'act-7', code: 'CM-ACTION-7', name: 'Free Transit', category: 'Movement', summary: 'Warp Pass', effect: 'Move to any Teleport space for free.' },
+  { id: 'act-8', code: 'CM-ACTION-8', name: 'Inheritance Reward', category: 'Money', summary: 'Bank Windfall', effect: 'Receive ₹1,000 from the Bank.' },
+  { id: 'act-9', code: 'CM-ACTION-9', name: 'Development Boom', category: 'Property', summary: 'Free City Upgrade', effect: 'Upgrade one of your properties by +1 level for free.' },
+  { id: 'act-10', code: 'CM-ACTION-10', name: 'Community Feast', category: 'Money', summary: 'Charity Gift', effect: 'Pay ₹300 to each player.' },
+  { id: 'act-11', code: 'CM-ACTION-11', name: 'Stock Market Crash', category: 'Money', summary: 'Financial Loss', effect: 'Pay ₹400 fine to the Bank.' },
+  { id: 'act-12', code: 'CM-ACTION-12', name: 'Startup Bonus', category: 'Money', summary: 'Venture Capital', effect: 'Receive ₹750 from the Bank.' },
+  { id: 'act-13', code: 'CM-ACTION-13', name: 'Festival Donations', category: 'Money', summary: 'Community Event', effect: 'Pay ₹100 to each other player.' },
+  { id: 'act-14', code: 'CM-ACTION-14', name: 'Loan Approved', category: 'Money', summary: 'Bank Loan', effect: 'Receive ₹600 from the Bank, but pay it back next turn.' },
+  { id: 'act-15', code: 'CM-ACTION-15', name: 'Dividend Payout', category: 'Money', summary: 'Portfolio Return', effect: 'Receive ₹100 for each property you own.' },
+  { id: 'act-16', code: 'CM-ACTION-16', name: 'Renovation Collapse', category: 'Property', summary: 'City Damage', effect: 'Your highest-level property drops by 1 level (ties broken by highest purchase price).' },
+  { id: 'act-17', code: 'CM-ACTION-17', name: 'Police Raid', category: 'Jail', summary: 'Target Warrant', effect: 'Send any one other player directly to Jail.' },
+  { id: 'act-18', code: 'CM-ACTION-18', name: 'Road Block', category: 'Movement', summary: 'Turn Delay', effect: 'Skip your next turn (forfeit).' },
+  { id: 'act-19', code: 'CM-ACTION-19', name: 'Property Swap', category: 'Special', summary: 'Swap Property', effect: 'Swap ownership of one of your properties with any property of another player.' },
+  { id: 'act-20', code: 'CM-ACTION-20', name: 'Rent Immunity', category: 'Special', summary: 'Rent Block', effect: 'You pay no rent this turn if you land on an owned property.' },
+  { id: 'act-21', code: 'CM-ACTION-21', name: 'Urban Renewal', category: 'Property', summary: 'Target Upgrade', effect: 'Upgrade your lowest-level property by +2 levels for free (ties broken by highest purchase price).' },
+  { id: 'act-22', code: 'CM-ACTION-22', name: 'Eminent Domain', category: 'Property', summary: 'Claim Property', effect: 'Select and claim 1 unowned property of your choice for free from the Bank via the interactive selection dropdown.' },
+  { id: 'act-23', code: 'CM-ACTION-23', name: 'Property Downgrade', category: 'Property', summary: 'Opponent Damage', effect: 'Target an opponent with 3+ properties (falls back to 2+ or 1+ if 3+ is unavailable) and select their highest-level property to downgrade by 1 level (ties broken by highest purchase price).' },
+  { id: 'act-24', code: 'CM-ACTION-24', name: 'Express Highway', category: 'Movement', summary: 'High Rent Warp', effect: 'Move directly to an opponent’s highest-rent property and pay standard rent.' },
+  { id: 'act-25', code: 'CM-ACTION-25', name: 'Metro Express', category: 'Movement', summary: 'Start Warp', effect: 'Pass START immediately and collect the ₹2,000 capital bonus.' },
+  { id: 'act-26', code: 'CM-ACTION-26', name: 'Reverse Detour', category: 'Movement', summary: 'Position Swap', effect: 'Swap your turn position and active scoreboard card placement with the player directly before you.' },
+  { id: 'act-27', code: 'CM-ACTION-27', name: 'Mass Amnesty', category: 'Jail', summary: 'Global Release', effect: 'Release ALL jailed players immediately without paying any bail fee.' },
+  { id: 'act-28', code: 'CM-ACTION-28', name: 'Curfew Warrant', category: 'Jail', summary: 'Richest Penalty', effect: 'Send the richest player (highest Net Worth) directly to Jail.' },
+  { id: 'act-29', code: 'CM-ACTION-29', name: 'Title Deed Seizure', category: 'Special', summary: 'Seize Property', effect: 'Select and seize 1 Level-1 property from an opponent (dynamically adapts to Level 2+ if no Level-1 properties exist).' },
+  { id: 'act-30', code: 'CM-ACTION-30', name: 'Rent Immunity Shield', category: 'Special', summary: 'Extended Shield', effect: 'You are completely immune to paying rent for your next 2 turns.' }
 ];
 
 export const STRATEGY_TIPS = [
   {
-    title: 'Focus on Monopoly Sets',
+    title: 'Focus on CityMint Sets',
     tip: 'Completing a color group automatically boosts all cities in that set to Level 2 (1.40× rent multiplier) without spending upgrade cash!'
   },
   {

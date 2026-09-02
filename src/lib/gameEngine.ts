@@ -349,7 +349,7 @@ export function purchaseProperty(state: GameState, playerId: string, propertyId:
 
   // Perform Group Bonus Check: All properties in group owned by SAME player
   let updatedCompletedGroups = [...state.completedGroups];
-  let monopolyBonusText = '';
+  let setBonusText = '';
   const group = PROPERTY_GROUPS[property.groupId];
   if (group) {
     const groupProperties = updatedProperties.filter((p) => p.groupId === property.groupId);
@@ -365,7 +365,7 @@ export function purchaseProperty(state: GameState, playerId: string, propertyId:
         }
         return p;
       });
-      monopolyBonusText = ` 🎉 MONOPOLY SET COMPLETED! All ${group.name} properties upgraded +1 Level!`;
+      setBonusText = ` 🎉 CITYMINT SET COMPLETED! All ${group.name} properties upgraded +1 Level!`;
     }
   }
 
@@ -376,7 +376,7 @@ export function purchaseProperty(state: GameState, playerId: string, propertyId:
     sourcePlayerId: playerId,
     amount: property.purchasePrice,
     propertyId: propertyId,
-    description: `${player.name} purchased ${property.cityName} for ₹${property.purchasePrice}${monopolyBonusText}`,
+    description: `${player.name} purchased ${property.cityName} for ₹${property.purchasePrice}${setBonusText}`,
     createdAt: new Date().toISOString(),
   };
 
@@ -999,11 +999,10 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
       updatedPlayers = state.players.map((p) => (p.id === playerId ? { ...p, balance: p.balance + 1000 } : p));
       break;
 
-    case 'act-9': // Development Upgrade -> Free upgrade of player's lowest property
+    case 'act-9': // Development Upgrade -> Free upgrade of player's lowest property (highest purchase price tie-breaker)
       const owned = state.properties.filter((p) => p.ownerId === playerId && p.level < 5);
       if (owned.length > 0) {
-        // Sort lowest level first
-        owned.sort((a, b) => a.level - b.level);
+        owned.sort((a, b) => (a.level - b.level) || (b.purchasePrice - a.purchasePrice));
         const targetProp = owned[0];
         updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: p.level + 1 } : p));
         description += `, upgrading ${targetProp.cityName} to Level ${targetProp.level + 1} for free.`;
@@ -1080,11 +1079,11 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
       }
       break;
 
-    case 'act-16': // Renovation Collapse: highest property drops 1 level
+    case 'act-16': // Renovation Collapse: highest property drops 1 level (highest purchase price tie-breaker)
       {
         const ownedProps = state.properties.filter((p) => p.ownerId === playerId && p.level > 1);
         if (ownedProps.length > 0) {
-          ownedProps.sort((a, b) => b.level - a.level);
+          ownedProps.sort((a, b) => (b.level - a.level) || (b.purchasePrice - a.purchasePrice));
           const targetProp = ownedProps[0];
           updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: p.level - 1 } : p));
           description += `, downgrading ${targetProp.cityName} from Level ${targetProp.level} to Level ${targetProp.level - 1}.`;
@@ -1122,11 +1121,11 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
       description += '. Rent Immunity active this turn — no rent payable if landing on owned property.';
       break;
 
-    case 'act-21': // Urban Renewal: boost lowest-level property by +2 levels
+    case 'act-21': // Urban Renewal: boost lowest-level property by +2 levels (highest purchase price tie-breaker)
       {
         const owned = state.properties.filter((p) => p.ownerId === playerId && p.level < 5);
         if (owned.length > 0) {
-          owned.sort((a, b) => a.level - b.level);
+          owned.sort((a, b) => (a.level - b.level) || (b.purchasePrice - a.purchasePrice));
           const targetProp = owned[0];
           const newLvl = Math.min(5, targetProp.level + 2);
           updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: newLvl } : p));
@@ -1150,23 +1149,24 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
       }
       break;
 
-    case 'act-23': // Property Downgrade: target opponent with 3+ properties and drop highest property by 1 level
+    case 'act-23': // Property Downgrade: target opponent property (defaults to 3+ props, falls back to 2+ then 1+)
       {
-        const targetOpponent = state.players.find(
-          (p) => p.id !== playerId && p.status === 'ACTIVE' && state.properties.filter((pr) => pr.ownerId === p.id).length >= 3
+        const oppsWithDowngradable = state.players.filter(
+          (p) => p.id !== playerId && p.status === 'ACTIVE' && state.properties.some((pr) => pr.ownerId === p.id && pr.level > 1)
         );
-        if (targetOpponent) {
+
+        if (oppsWithDowngradable.length > 0) {
+          const propCounts = oppsWithDowngradable.map((p) => state.properties.filter((pr) => pr.ownerId === p.id).length);
+          const maxProps = Math.max(...propCounts);
+
+          const targetOpponent = oppsWithDowngradable.find((p) => state.properties.filter((pr) => pr.ownerId === p.id).length === maxProps) || oppsWithDowngradable[0];
           const oppProps = state.properties.filter((p) => p.ownerId === targetOpponent.id && p.level > 1);
-          if (oppProps.length > 0) {
-            oppProps.sort((a, b) => b.level - a.level);
-            const targetProp = oppProps[0];
-            updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: p.level - 1 } : p));
-            description += `, downgrading ${targetOpponent.name}'s ${targetProp.cityName} from Level ${targetProp.level} to Level ${targetProp.level - 1}.`;
-          } else {
-            description += `, but ${targetOpponent.name} has no upgradable properties.`;
-          }
+          oppProps.sort((a, b) => (b.level - a.level) || (b.purchasePrice - a.purchasePrice));
+          const targetProp = oppProps[0];
+          updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: p.level - 1 } : p));
+          description += `, downgrading ${targetOpponent.name}'s ${targetProp.cityName} from Level ${targetProp.level} to Level ${targetProp.level - 1}.`;
         } else {
-          description += ', but no opponent owns 3 or more properties.';
+          description += ', but no opponents own any downgradable properties (level > 1).';
         }
       }
       break;
@@ -1192,7 +1192,23 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
       return passStart(state, playerId);
 
     case 'act-26': // Reverse Detour: swap turn order with previous player
-      description += '. Turn position reversed with preceding player.';
+      {
+        const pIndex = updatedPlayers.findIndex((p) => p.id === playerId);
+        if (pIndex > 0) {
+          const prevPlayer = updatedPlayers[pIndex - 1];
+          const temp = updatedPlayers[pIndex];
+          updatedPlayers[pIndex] = updatedPlayers[pIndex - 1];
+          updatedPlayers[pIndex - 1] = temp;
+          description += `. Turn order position swapped with ${prevPlayer.name}!`;
+        } else if (updatedPlayers.length > 1) {
+          const lastIndex = updatedPlayers.length - 1;
+          const prevPlayer = updatedPlayers[lastIndex];
+          const temp = updatedPlayers[0];
+          updatedPlayers[0] = updatedPlayers[lastIndex];
+          updatedPlayers[lastIndex] = temp;
+          description += `. Turn order position swapped with ${prevPlayer.name}!`;
+        }
+      }
       break;
 
     case 'act-27': // Mass Amnesty: release ALL jailed players free of charge
@@ -1225,16 +1241,19 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
       }
       break;
 
-    case 'act-29': // Title Deed Seizure: seize 1 Level-1 property from opponent
+    case 'act-29': // Title Deed Seizure: seize lowest-level property from opponent (defaults to Level 1, falls back to Level 2+)
       {
-        const oppL1Props = state.properties.filter((p) => p.ownerId !== null && p.ownerId !== playerId && p.level === 1);
-        if (oppL1Props.length > 0) {
-          const targetProp = oppL1Props[0];
+        const oppProps = state.properties.filter((p) => p.ownerId !== null && p.ownerId !== playerId);
+        if (oppProps.length > 0) {
+          const minLevel = Math.min(...oppProps.map((p) => p.level));
+          const eligibleProps = oppProps.filter((p) => p.level === minLevel);
+          eligibleProps.sort((a, b) => b.purchasePrice - a.purchasePrice);
+          const targetProp = eligibleProps[0];
           const oldOwner = state.players.find((p) => p.id === targetProp.ownerId);
           updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, ownerId: playerId } : p));
-          description += `. Seized ${targetProp.cityName} from ${oldOwner?.name || 'opponent'} for free!`;
+          description += `. Seized ${targetProp.cityName} (Level ${targetProp.level}) from ${oldOwner?.name || 'opponent'} for free!`;
         } else {
-          description += ', but no opponent owns a Level 1 property to seize.';
+          description += ', but no opponents own any properties to seize.';
         }
       }
       break;
@@ -1719,7 +1738,7 @@ export function executeAuctionWin(
 
   // Perform Group Completion Check: All properties in group owned by SAME player
   let updatedCompletedGroups = [...state.completedGroups];
-  let monopolyBonusText = '';
+  let setBonusText = '';
   const group = PROPERTY_GROUPS[property.groupId];
   if (group) {
     const groupProperties = updatedProperties.filter((p) => p.groupId === property.groupId);
@@ -1734,7 +1753,7 @@ export function executeAuctionWin(
         }
         return p;
       });
-      monopolyBonusText = ` 🎉 MONOPOLY SET COMPLETED! All ${group.name} properties upgraded +1 Level!`;
+      setBonusText = ` 🎉 CITYMINT SET COMPLETED! All ${group.name} properties upgraded +1 Level!`;
     }
   }
 
@@ -1745,7 +1764,7 @@ export function executeAuctionWin(
     sourcePlayerId: winningPlayerId,
     amount: winningBidAmount,
     propertyId: propertyId,
-    description: `${player.name} won live auction for ${property.cityName} at ₹${winningBidAmount}${monopolyBonusText}`,
+    description: `${player.name} won live auction for ${property.cityName} at ₹${winningBidAmount}${setBonusText}`,
     createdAt: new Date().toISOString(),
   };
 
@@ -1842,6 +1861,145 @@ export function landOnOwnPropertyUpgrade(state: GameState, playerId: string, pro
     amount: 0,
     propertyId: propertyId,
     description: `${player.name} landed on their own ${property.cityName} — free upgrade to Level ${property.level + 1}!`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
+    properties: updatedProperties,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// Targeted Title Deed Seizure (act-29)
+export function executeSeizeProperty(state: GameState, playerId: string, targetPropertyId: string): GameState {
+  if (state.status !== 'ACTIVE') return state;
+
+  const player = state.players.find((p) => p.id === playerId);
+  const property = state.properties.find((p) => p.id === targetPropertyId);
+
+  if (!player || !property || !property.ownerId || property.ownerId === playerId) {
+    return state;
+  }
+
+  const oldOwner = state.players.find((p) => p.id === property.ownerId);
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const updatedProperties = state.properties.map((p) =>
+    p.id === targetPropertyId ? { ...p, ownerId: playerId } : p
+  );
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'ACTION_CARD',
+    sourcePlayerId: playerId,
+    targetPlayerId: oldOwner?.id,
+    amount: 0,
+    propertyId: targetPropertyId,
+    description: `${player.name} executed Title Deed Seizure: seized ${property.cityName} (Level 1) from ${oldOwner?.name || 'opponent'}!`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
+    properties: updatedProperties,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// Targeted Eminent Domain: Claim 1 unowned property for free (act-22)
+export function executeClaimUnownedProperty(state: GameState, playerId: string, targetPropertyId: string): GameState {
+  if (state.status !== 'ACTIVE') return state;
+
+  const player = state.players.find((p) => p.id === playerId);
+  const property = state.properties.find((p) => p.id === targetPropertyId);
+
+  if (!player || !property || property.ownerId !== null) {
+    return state;
+  }
+
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  let updatedProperties = state.properties.map((p) =>
+    p.id === targetPropertyId ? { ...p, ownerId: playerId, level: 1 } : p
+  );
+
+  let updatedCompletedGroups = [...state.completedGroups];
+  let setBonusText = '';
+  const group = PROPERTY_GROUPS[property.groupId];
+  if (group) {
+    const groupProperties = updatedProperties.filter((p) => p.groupId === property.groupId);
+    const allOwnedBySamePlayer = groupProperties.every((p) => p.ownerId === playerId);
+    const alreadyCompleted = state.completedGroups.includes(property.groupId);
+
+    if (allOwnedBySamePlayer && !alreadyCompleted) {
+      updatedCompletedGroups.push(property.groupId);
+      updatedProperties = updatedProperties.map((p) => {
+        if (p.groupId === property.groupId) {
+          return { ...p, level: Math.min(p.level + 1, 5) };
+        }
+        return p;
+      });
+      setBonusText = ` 🎉 CITYMINT SET COMPLETED! All ${group.name} properties upgraded +1 Level!`;
+    }
+  }
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'ACTION_CARD',
+    sourcePlayerId: playerId,
+    amount: 0,
+    propertyId: targetPropertyId,
+    description: `${player.name} executed Eminent Domain: claimed unowned ${property.cityName} for free from the Bank!${setBonusText}`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...state,
+    properties: updatedProperties,
+    completedGroups: updatedCompletedGroups,
+    transactions: [transaction, ...state.transactions],
+    undoStack: updatedUndoStack,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// Targeted Property Downgrade (act-23)
+export function executeTargetedPropertyDowngrade(state: GameState, playerId: string, targetPropertyId: string): GameState {
+  if (state.status !== 'ACTIVE') return state;
+
+  const player = state.players.find((p) => p.id === playerId);
+  const property = state.properties.find((p) => p.id === targetPropertyId);
+
+  if (!player || !property || !property.ownerId || property.ownerId === playerId || property.level <= 1) {
+    return state;
+  }
+
+  const opp = state.players.find((p) => p.id === property.ownerId);
+  const updatedUndoStack = pushUndoSnapshot(state);
+
+  const oldLevel = property.level;
+  const newLevel = Math.max(1, property.level - 1);
+
+  const updatedProperties = state.properties.map((p) =>
+    p.id === targetPropertyId ? { ...p, level: newLevel } : p
+  );
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'ACTION_CARD',
+    sourcePlayerId: playerId,
+    targetPlayerId: opp?.id,
+    amount: 0,
+    propertyId: targetPropertyId,
+    description: `${player.name} executed Property Downgrade: downgraded ${opp?.name || 'opponent'}'s ${property.cityName} from Level ${oldLevel} to Level ${newLevel}!`,
     createdAt: new Date().toISOString(),
   };
 
