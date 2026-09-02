@@ -105,7 +105,8 @@ export default function ActiveGame() {
 
   const handleSelectTheme = (tName: string) => {
     setTheme(tName);
-    document.body.className = tName;
+    document.body.classList.remove('theme-citymint', 'theme-light', 'theme-dark');
+    document.body.classList.add(tName);
     localSaveSetting('theme', tName);
   };
 
@@ -479,6 +480,76 @@ export default function ActiveGame() {
     );
   };
 
+  /** Compute a preview of what the action card will do to balances — called before execution */
+  const computeActionPreview = (cardId: string): {
+    type: 'gain' | 'loss' | 'neutral' | 'per-player-gain' | 'per-player-loss';
+    amount: number;
+    perPlayer?: number;
+    fromTo: string;
+    note?: string;
+  } | null => {
+    if (!game || !game.currentPlayerId) return null;
+    const currentPlayer = game.players.find((p) => p.id === game.currentPlayerId);
+    if (!currentPlayer) return null;
+    const otherActivePlayers = game.players.filter(
+      (p) => p.id !== game.currentPlayerId && (p.status === 'ACTIVE' || p.status === 'IN_JAIL')
+    );
+
+    switch (cardId) {
+      case 'act-1':  return { type: 'gain',  amount: 500,  fromTo: 'from Bank' };
+      case 'act-2':  return { type: 'loss',  amount: 300,  fromTo: 'fine to Bank' };
+      case 'act-8':  return { type: 'gain',  amount: 1000, fromTo: 'from Bank' };
+      case 'act-11': return { type: 'loss',  amount: 400,  fromTo: 'fine to Bank' };
+      case 'act-12': return { type: 'gain',  amount: 750,  fromTo: 'from Bank' };
+      case 'act-14': return { type: 'gain',  amount: 600,  fromTo: 'from Bank', note: 'Repayment via manual adjustment later' };
+      case 'act-3': {
+        // +200 from each active player
+        const total = otherActivePlayers.reduce((sum, p) => sum + Math.min(p.balance, 200), 0);
+        return { type: 'per-player-gain', amount: total, perPlayer: 200, fromTo: `from each of ${otherActivePlayers.length} player(s)` };
+      }
+      case 'act-10': {
+        // -300 to each active player
+        const total = otherActivePlayers.length * 300;
+        return { type: 'per-player-loss', amount: total, perPlayer: 300, fromTo: `to each of ${otherActivePlayers.length} player(s)` };
+      }
+      case 'act-13': {
+        // -100 to each active player
+        const total = otherActivePlayers.length * 100;
+        return { type: 'per-player-loss', amount: total, perPlayer: 100, fromTo: `to each of ${otherActivePlayers.length} player(s)` };
+      }
+      case 'act-4': {
+        const ownedCount = game.properties.filter((p) => p.ownerId === game.currentPlayerId).length;
+        const total = ownedCount * 150;
+        return { type: 'loss', amount: total, fromTo: 'levy to Bank', note: `₹150 × ${ownedCount} properties` };
+      }
+      case 'act-15': {
+        const propCount = game.properties.filter((p) => p.ownerId === game.currentPlayerId).length;
+        const total = propCount * 100;
+        return { type: 'gain', amount: total, fromTo: 'dividend from Bank', note: `₹100 × ${propCount} properties` };
+      }
+      case 'act-5':  return { type: 'neutral', amount: 0, fromTo: 'Go directly to Jail' };
+      case 'act-6':  return { type: 'neutral', amount: 0, fromTo: 'Keep as Pardon Card' };
+      case 'act-7':  return { type: 'neutral', amount: 0, fromTo: 'Free Teleport granted' };
+      case 'act-9':  return { type: 'neutral', amount: 0, fromTo: 'Free property upgrade' };
+      case 'act-16': return { type: 'neutral', amount: 0, fromTo: 'Property level reduced by 1' };
+      case 'act-17': return { type: 'neutral', amount: 0, fromTo: 'Send a player to Jail' };
+      case 'act-18': return { type: 'neutral', amount: 0, fromTo: 'Your next turn is skipped' };
+      case 'act-19': return { type: 'neutral', amount: 0, fromTo: 'Property ownership swap' };
+      case 'act-20': return { type: 'neutral', amount: 0, fromTo: 'Rent immunity this turn' };
+      case 'act-21': return { type: 'neutral', amount: 0, fromTo: 'Upgrade lowest property +2 levels for free' };
+      case 'act-22': return { type: 'neutral', amount: 0, fromTo: 'Claim 1 unowned property for free' };
+      case 'act-23': return { type: 'neutral', amount: 0, fromTo: 'Downgrade opponent property -1 level' };
+      case 'act-24': return { type: 'neutral', amount: 0, fromTo: 'Move to opponent’s highest rent property' };
+      case 'act-25': return { type: 'gain',    amount: 2000,fromTo: 'Pass START reward from Bank' };
+      case 'act-26': return { type: 'neutral', amount: 0, fromTo: 'Swap turn order position with previous player' };
+      case 'act-27': return { type: 'neutral', amount: 0, fromTo: 'Release ALL jailed players for free' };
+      case 'act-28': return { type: 'neutral', amount: 0, fromTo: 'Send richest player (highest Net Worth) to Jail' };
+      case 'act-29': return { type: 'neutral', amount: 0, fromTo: 'Seize 1 Level-1 property from opponent' };
+      case 'act-30': return { type: 'neutral', amount: 0, fromTo: 'Immune to paying rent for next 2 turns' };
+      default:       return null;
+    }
+  };
+
   const handleApplyActionCard = () => {
     if (!drawnActionId || !game.currentPlayerId) return;
     const nextState = executeActionCard(game, game.currentPlayerId, drawnActionId);
@@ -486,6 +557,7 @@ export default function ActiveGame() {
     setDrawnActionId(null);
     setScanContext(null);
   };
+
 
   const handleApplyPoliceRaid = () => {
     if (!game || !game.currentPlayerId || !policeRaidTargetId) return;
@@ -651,57 +723,76 @@ export default function ActiveGame() {
           <div className="h-full flex flex-col gap-3 p-3.5 sm:p-5 overflow-y-auto no-scrollbar">
             
             {/* 1. 🏆 Live Multi-Player Scoreboard Strip */}
-            <div className="overflow-x-auto no-scrollbar pb-0.5">
-              <div className={`grid gap-1.5 ${
+            <div className="w-full">
+              <div className={`grid gap-2 sm:gap-3 ${
                 game.players.length === 2 ? 'grid-cols-2' :
                 game.players.length === 3 ? 'grid-cols-3' :
-                game.players.length === 4 ? 'grid-cols-4' :
-                'flex items-center min-w-max gap-2'
+                'grid-cols-2 sm:grid-cols-4'
               }`}>
                 {game.players.map((player) => {
                   const isCurrent = player.id === game.currentPlayerId;
                   const isBankrupt = player.status === 'BANKRUPT' || player.status === 'ELIMINATED';
+                  const isJailed = player.status === 'IN_JAIL';
                   const propsCount = game.properties.filter((p) => p.ownerId === player.id).length;
 
                   return (
                     <div
                       key={player.id}
                       ref={isCurrent ? activePlayerCardRef : null}
-                      onClick={() => {
-                        setInspectPlayerId(player.id);
-                      }}
-                      className={`px-2 py-1.5 sm:px-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 min-w-0 ${
+                      onClick={() => setInspectPlayerId(player.id)}
+                      className={`px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
                         isBankrupt
-                          ? 'bg-red-950/30 border-red-500/30 opacity-70 hover:opacity-100'
+                          ? 'bg-rose-950/20 border-rose-500/30 opacity-60 hover:opacity-90'
                           : isCurrent
-                          ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)] shadow-sm ring-1 ring-[var(--accent-mint)]/50'
-                          : 'bg-[var(--bg-secondary)] border-[var(--border-custom)] opacity-75 hover:opacity-100'
+                          ? 'bg-[var(--accent-mint)]/10 border-[var(--accent-mint)] shadow-md ring-1 ring-[var(--accent-mint)]/40'
+                          : 'bg-[var(--bg-secondary)] border-[var(--border-custom)] hover:bg-[var(--bg-elevated)]'
                       }`}
-                      title={`Click to view ${player.name}'s properties & details`}
+                      title={`Click to view ${player.name}'s portfolio`}
                     >
-                      {/* Properly aligned avatar dot with pulse ring when current */}
-                      <div className="relative shrink-0 flex items-center justify-center">
-                        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-white/20" style={{ backgroundColor: isBankrupt ? '#ef4444' : player.color }} />
+                      {/* Top Row: Color Token + Player Name + Status Icon */}
+                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="relative shrink-0 flex items-center justify-center">
+                            <span 
+                              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-white/30 shadow-sm" 
+                              style={{ backgroundColor: isBankrupt ? '#ef4444' : player.color }} 
+                            />
+                            {isCurrent && !isBankrupt && (
+                              <span className="absolute -inset-1 rounded-full border border-[var(--accent-mint)] animate-pulse pointer-events-none" />
+                            )}
+                          </div>
+                          <span className={`font-display font-extrabold text-xs sm:text-sm truncate ${
+                            isBankrupt ? 'text-rose-300 line-through' : 'text-[var(--text-primary)]'
+                          }`}>
+                            {player.name}
+                          </span>
+                        </div>
+
+                        {/* Status badge */}
+                        {isJailed && <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 shrink-0">🔒</span>}
+                        {isBankrupt && <span className="text-[10px] px-1 py-0.5 rounded bg-rose-500/20 border border-rose-500/30 shrink-0">🚫</span>}
                         {isCurrent && !isBankrupt && (
-                          <span className="absolute -inset-1 rounded-full border border-[var(--accent-mint)] animate-pulse pointer-events-none" />
+                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[var(--accent-mint)] text-[var(--bg-primary)] shrink-0 hidden sm:inline-block">
+                            TURN
+                          </span>
                         )}
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1">
-                          <span className={`font-display font-extrabold text-[10px] sm:text-[11px] truncate ${isBankrupt ? 'text-red-300 line-through' : 'text-[var(--text-primary)]'}`}>{player.name}</span>
-                          {player.status === 'IN_JAIL' && <span className="text-[8px] shrink-0">🔒</span>}
-                          {isBankrupt && <span className="text-[8px] shrink-0">🚫</span>}
-                        </div>
-                        <p className="text-[8.5px] sm:text-[9px] font-mono truncate">
+                      {/* Bottom Row: Balance + Property Count Tag */}
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-mono font-bold text-xs sm:text-sm text-[var(--text-primary)] tracking-tight">
                           {isBankrupt ? (
-                            <span className="text-red-400 font-bold uppercase">BANKRUPT</span>
+                            <span className="text-[10px] text-rose-400 font-extrabold uppercase">BANKRUPT</span>
                           ) : (
-                            <span className="text-[var(--text-secondary)]">
-                              ₹{player.balance >= 1000 ? `${(player.balance / 1000).toFixed(1)}k` : player.balance} · 🏢{propsCount}
-                            </span>
+                            `₹${player.balance.toLocaleString()}`
                           )}
-                        </p>
+                        </span>
+                        {!isBankrupt && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-secondary)] shrink-0">
+                            <span>🏢</span>
+                            <span>{propsCount}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
@@ -1443,126 +1534,135 @@ export default function ActiveGame() {
       )}
 
       {/* Action Card Draw Confirmation Drawer */}
-      {scanContext === 'ACTION' && drawnActionId && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-6 shadow-2xl animate-in slide-in-from-bottom-5 duration-200 text-left relative">
-            <button
-              onClick={() => { setScanContext(null); setDrawnActionId(null); }}
-              className="absolute right-4 top-4 w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-            >
-              ✕
-            </button>
-            <h3 className="font-display font-extrabold text-xs uppercase text-[var(--accent-gold)] tracking-widest mb-1">
-              Action Card Drawn
-            </h3>
-            <h2 className="font-display font-black text-2xl text-[var(--text-primary)] mb-2">
-              {ACTION_CARDS.find((c) => c.id === drawnActionId)?.name}
-            </h2>
-            <div className="p-3.5 bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl text-xs text-[var(--text-secondary)] leading-relaxed mb-5">
-              {ACTION_CARDS.find((c) => c.id === drawnActionId)?.description}
-            </div>
+      {scanContext === 'ACTION' && drawnActionId && (() => {
+        const card = ACTION_CARDS.find((c) => c.id === drawnActionId);
+        const preview = computeActionPreview(drawnActionId);
+        const currentPlayer = game.players.find((p) => p.id === game.currentPlayerId);
 
-            {/* ── Specialized Interactive Card Controls ── */}
+        const categoryColors: Record<string, { badge: string; glow: string }> = {
+          Money:    { badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', glow: 'shadow-emerald-500/10' },
+          Property: { badge: 'bg-sky-500/20 text-sky-400 border-sky-500/30',             glow: 'shadow-sky-500/10' },
+          Jail:     { badge: 'bg-rose-500/20 text-rose-400 border-rose-500/30',           glow: 'shadow-rose-500/10' },
+          Movement: { badge: 'bg-amber-500/20 text-amber-400 border-amber-500/30',        glow: 'shadow-amber-500/10' },
+          Special:  { badge: 'bg-purple-500/20 text-purple-400 border-purple-500/30',     glow: 'shadow-purple-500/10' },
+        };
+        const catMeta = categoryColors[card?.category ?? 'Money'];
 
-            {/* 1. Police Raid (act-17) */}
-            {drawnActionId === 'act-17' && (
-              <div className="space-y-3 mb-6">
-                <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)]">
-                  Select Opponent to Send to Jail:
-                </label>
-                <div className="relative">
-                  <select
-                    value={policeRaidTargetId}
-                    onChange={(e) => setPoliceRaidTargetId(e.target.value)}
-                    className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-3 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
-                  >
-                    <option value="">-- Choose Target Player --</option>
-                    {game.players
-                      .filter((p) => p.id !== game.currentPlayerId && (p.status === 'ACTIVE'))
-                      .map((p) => (
-                        <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.name}</option>
-                      ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
-                </div>
-                <button
-                  disabled={!policeRaidTargetId}
-                  onClick={handleApplyPoliceRaid}
-                  className="w-full py-3.5 rounded-xl font-display font-bold bg-rose-600 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md"
-                >
-                  Send Player to Jail 🚨
-                </button>
+        const isGain    = preview?.type === 'gain' || preview?.type === 'per-player-gain';
+        const isLoss    = preview?.type === 'loss' || preview?.type === 'per-player-loss';
+        const isNeutral = preview?.type === 'neutral';
+
+        const previewBg    = isGain ? 'bg-emerald-500/10 border-emerald-500/30' : isLoss ? 'bg-rose-500/10 border-rose-500/30' : 'bg-[var(--bg-primary)] border-[var(--border-custom)]';
+        const amountColor  = isGain ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-amber-400';
+        const amountPrefix = isGain ? '+' : isLoss ? '−' : '';
+        const proceedBg    = isGain ? 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/25' : isLoss ? 'bg-rose-500 hover:bg-rose-400 shadow-rose-500/25' : 'bg-[var(--accent-mint)] hover:opacity-90';
+        const proceedText  = isGain ? 'text-white' : isLoss ? 'text-white' : 'text-[var(--bg-primary)]';
+
+        const proceedLabel = (() => {
+          if (!preview || isNeutral) return 'Apply Card Effect';
+          if (preview.type === 'gain')          return `Receive ₹${preview.amount.toLocaleString()} ${preview.fromTo}`;
+          if (preview.type === 'loss')          return `Pay ₹${preview.amount.toLocaleString()} ${preview.fromTo}`;
+          if (preview.type === 'per-player-gain') return `Collect ₹${preview.perPlayer} × ${preview.fromTo}`;
+          if (preview.type === 'per-player-loss') return `Pay ₹${preview.perPlayer} × ${preview.fromTo}`;
+          return 'Apply Card Effect';
+        })();
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center p-4 animate-in fade-in duration-200">
+            <div className={`w-full max-w-sm rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] p-6 shadow-2xl ${catMeta.glow} animate-in slide-in-from-bottom-5 duration-200 text-left relative`}>
+
+              {/* Close */}
+              <button
+                onClick={() => { setScanContext(null); setDrawnActionId(null); }}
+                className="absolute right-4 top-4 w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+              >
+                ✕
+              </button>
+
+              {/* Category badge + player who drew */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded border ${catMeta.badge}`}>
+                  {card?.category} Card
+                </span>
+                {currentPlayer && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    · {currentPlayer.name}
+                  </span>
+                )}
               </div>
-            )}
 
-            {/* 2. Development Boom (act-9) */}
-            {drawnActionId === 'act-9' && (
-              <div className="space-y-3 mb-6">
-                <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)]">
-                  Select Property to Upgrade (+1 Level):
-                </label>
-                <div className="relative">
-                  <select
-                    value={devBoomPropertyId}
-                    onChange={(e) => setDevBoomPropertyId(e.target.value)}
-                    className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-3 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
-                  >
-                    <option value="">-- Choose Owned Property --</option>
-                    {game.properties
-                      .filter((p) => p.ownerId === game.currentPlayerId && p.level < 5)
-                      .map((p) => (
-                        <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
-                          {p.cityName} (Currently Lv {p.level})
-                        </option>
-                      ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+              {/* Card name */}
+              <h2 className="font-display font-black text-2xl text-[var(--text-primary)] mb-1">
+                {card?.name}
+              </h2>
+
+              {/* Description */}
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+                {card?.description}
+              </p>
+
+              {/* ── Balance Impact Preview ── */}
+              {preview && (
+                <div className={`rounded-2xl border p-4 mb-5 ${previewBg}`}>
+                  <p className="text-[9px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mb-2">
+                    Balance Impact Preview
+                  </p>
+
+                  {!isNeutral ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className={`font-display font-black text-3xl ${amountColor}`}>
+                          {amountPrefix}₹{preview.amount.toLocaleString()}
+                        </div>
+                        <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                          {preview.fromTo}
+                        </div>
+                        {preview.note && (
+                          <div className="text-[9px] text-[var(--text-secondary)] opacity-70 mt-0.5 italic">
+                            {preview.note}
+                          </div>
+                        )}
+                      </div>
+                      {/* Current balance → new balance */}
+                      {currentPlayer && (
+                        <div className="text-right">
+                          <div className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wider mb-0.5">Balance</div>
+                          <div className="text-xs text-[var(--text-secondary)] line-through font-mono">
+                            ₹{currentPlayer.balance.toLocaleString()}
+                          </div>
+                          <div className={`font-mono font-extrabold text-sm ${amountColor}`}>
+                            ₹{(isGain
+                              ? currentPlayer.balance + preview.amount
+                              : Math.max(0, currentPlayer.balance - preview.amount)
+                            ).toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-amber-400">
+                      <span className="text-xl">⚡</span>
+                      <span className="text-xs font-bold">{preview.fromTo}</span>
+                    </div>
+                  )}
                 </div>
-                <button
-                  disabled={!devBoomPropertyId}
-                  onClick={handleApplyDevelopmentBoom}
-                  className="w-full py-3.5 rounded-xl font-display font-bold bg-emerald-600 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md"
-                >
-                  Upgrade Property (+1 Level) 🏗️
-                </button>
-              </div>
-            )}
+              )}
 
-            {/* 3. Property Swap (act-19) */}
-            {drawnActionId === 'act-19' && (
-              <div className="space-y-3 mb-6">
-                <div>
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
-                    Your Property to Swap:
+              {/* ── Specialized Interactive Controls ── */}
+
+              {/* Police Raid (act-17) */}
+              {drawnActionId === 'act-17' && (
+                <div className="space-y-3 mb-4">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Select Opponent to Send to Jail:
                   </label>
                   <div className="relative">
                     <select
-                      value={swapPropAId}
-                      onChange={(e) => setSwapPropAId(e.target.value)}
-                      className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                      value={policeRaidTargetId}
+                      onChange={(e) => setPoliceRaidTargetId(e.target.value)}
+                      className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-3 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-rose-400"
                     >
-                      <option value="">-- Your Property --</option>
-                      {game.properties
-                        .filter((p) => p.ownerId === game.currentPlayerId)
-                        .map((p) => (
-                          <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.cityName}</option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
-                    Target Opponent &amp; Their Property:
-                  </label>
-                  <div className="relative mb-2">
-                    <select
-                      value={swapTargetPlayerId}
-                      onChange={(e) => { setSwapTargetPlayerId(e.target.value); setSwapPropBId(''); }}
-                      className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
-                    >
-                      <option value="">-- Select Opponent --</option>
+                      <option value="">-- Choose Target Player --</option>
                       {game.players
                         .filter((p) => p.id !== game.currentPlayerId && p.status === 'ACTIVE')
                         .map((p) => (
@@ -1571,48 +1671,136 @@ export default function ActiveGame() {
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
                   </div>
+                  <button
+                    disabled={!policeRaidTargetId}
+                    onClick={handleApplyPoliceRaid}
+                    className="w-full py-3.5 rounded-xl font-display font-bold bg-rose-600 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md cursor-pointer"
+                  >
+                    Send Player to Jail 🚨
+                  </button>
+                </div>
+              )}
 
-                  {swapTargetPlayerId && (
+              {/* Development Boom (act-9) */}
+              {drawnActionId === 'act-9' && (
+                <div className="space-y-3 mb-4">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Select Property to Upgrade (+1 Level):
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={devBoomPropertyId}
+                      onChange={(e) => setDevBoomPropertyId(e.target.value)}
+                      className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-3 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                    >
+                      <option value="">-- Choose Owned Property --</option>
+                      {game.properties
+                        .filter((p) => p.ownerId === game.currentPlayerId && p.level < 5)
+                        .map((p) => (
+                          <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
+                            {p.cityName} (Currently Lv {p.level})
+                          </option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                  </div>
+                  <button
+                    disabled={!devBoomPropertyId}
+                    onClick={handleApplyDevelopmentBoom}
+                    className="w-full py-3.5 rounded-xl font-display font-bold bg-emerald-600 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md cursor-pointer"
+                  >
+                    Upgrade Property (+1 Level) 🏗️
+                  </button>
+                </div>
+              )}
+
+              {/* Property Swap (act-19) */}
+              {drawnActionId === 'act-19' && (
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
+                      Your Property to Swap:
+                    </label>
                     <div className="relative">
                       <select
-                        value={swapPropBId}
-                        onChange={(e) => setSwapPropBId(e.target.value)}
+                        value={swapPropAId}
+                        onChange={(e) => setSwapPropAId(e.target.value)}
                         className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
                       >
-                        <option value="">-- Their Property --</option>
+                        <option value="">-- Your Property --</option>
                         {game.properties
-                          .filter((p) => p.ownerId === swapTargetPlayerId)
+                          .filter((p) => p.ownerId === game.currentPlayerId)
                           .map((p) => (
                             <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.cityName}</option>
                           ))}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
                     </div>
-                  )}
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-secondary)] block mb-1">
+                      Target Opponent &amp; Their Property:
+                    </label>
+                    <div className="relative mb-2">
+                      <select
+                        value={swapTargetPlayerId}
+                        onChange={(e) => { setSwapTargetPlayerId(e.target.value); setSwapPropBId(''); }}
+                        className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                      >
+                        <option value="">-- Select Opponent --</option>
+                        {game.players
+                          .filter((p) => p.id !== game.currentPlayerId && p.status === 'ACTIVE')
+                          .map((p) => (
+                            <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.name}</option>
+                          ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                    </div>
+
+                    {swapTargetPlayerId && (
+                      <div className="relative">
+                        <select
+                          value={swapPropBId}
+                          onChange={(e) => setSwapPropBId(e.target.value)}
+                          className="w-full appearance-none bg-[var(--bg-primary)] border border-[var(--border-custom)] rounded-xl py-2.5 px-3 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                        >
+                          <option value="">-- Their Property --</option>
+                          {game.properties
+                            .filter((p) => p.ownerId === swapTargetPlayerId)
+                            .map((p) => (
+                              <option key={p.id} value={p.id} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">{p.cityName}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    disabled={!swapPropAId || !swapPropBId || !swapTargetPlayerId}
+                    onClick={handleApplyPropertySwap}
+                    className="w-full py-3.5 rounded-xl font-display font-bold bg-sky-600 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md mt-2 cursor-pointer"
+                  >
+                    Execute Property Swap 🔄
+                  </button>
                 </div>
+              )}
 
+              {/* Standard Action Cards — Proceed Button */}
+              {drawnActionId !== 'act-17' && drawnActionId !== 'act-9' && drawnActionId !== 'act-19' && (
                 <button
-                  disabled={!swapPropAId || !swapPropBId || !swapTargetPlayerId}
-                  onClick={handleApplyPropertySwap}
-                  className="w-full py-3.5 rounded-xl font-display font-bold bg-sky-600 text-white disabled:opacity-40 active:scale-[0.98] transition-all shadow-md mt-2"
+                  onClick={handleApplyActionCard}
+                  className={`w-full py-3.5 rounded-xl font-display font-bold text-sm ${proceedBg} ${proceedText} active:scale-[0.98] transition-all shadow-lg cursor-pointer`}
                 >
-                  Execute Property Swap 🔄
+                  {proceedLabel}
                 </button>
-              </div>
-            )}
-
-            {/* 4. Standard Action Cards */}
-            {drawnActionId !== 'act-17' && drawnActionId !== 'act-9' && drawnActionId !== 'act-19' && (
-              <button
-                onClick={handleApplyActionCard}
-                className="w-full py-3.5 rounded-xl font-display font-bold bg-[var(--accent-mint)] text-[var(--bg-primary)] active:scale-[0.98] transition-all shadow-md"
-              >
-                Process Action Card
-              </button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
 
       {/* Banker Admin Correct Panel */}
       {showAdminPanel && (

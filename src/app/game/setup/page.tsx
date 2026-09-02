@@ -138,7 +138,7 @@ export default function GameSetup() {
   };
 
   return (
-    <main className="h-screen flex flex-col bg-[#07090E] text-white font-sans select-none overflow-hidden relative">
+    <main className="h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans select-none overflow-hidden relative">
       
       {/* Visual Background Glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -147,20 +147,20 @@ export default function GameSetup() {
       </div>
 
       {/* ── FIXED MODERN HEADER ── */}
-      <div className="flex-none px-5 sm:px-6 pt-6 sm:pt-8 pb-4 border-b border-white/10 bg-[#0B0D14]/90 backdrop-blur-md z-20">
+      <div className="flex-none px-5 sm:px-6 pt-6 sm:pt-8 pb-4 border-b border-[var(--border-custom)] bg-[var(--bg-primary)]/90 backdrop-blur-md z-20">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[#161A26] border border-white/10 text-slate-300 hover:text-white active:scale-95 transition-all shadow-md"
+            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] active:scale-95 transition-all shadow-md"
           >
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h2 className="font-display font-black text-lg sm:text-xl text-white tracking-wide flex items-center gap-2">
+            <h2 className="font-display font-black text-lg sm:text-xl text-[var(--text-primary)] tracking-wide flex items-center gap-2">
               <span>Match Setup</span>
               <Sparkles className="w-4 h-4 text-amber-400" />
             </h2>
-            <p className="text-xs text-slate-400">Configure players &amp; scan physical QR cards</p>
+            <p className="text-xs text-[var(--text-secondary)]">Configure players &amp; scan physical QR cards</p>
           </div>
         </div>
       </div>
@@ -178,9 +178,9 @@ export default function GameSetup() {
           )}
 
           {/* STEP 1: Select Player Count */}
-          <div className="p-5 rounded-3xl bg-[#12151F] border border-white/10 space-y-3 shadow-xl">
+          <div className="p-5 rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] space-y-3 shadow-xl">
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-slate-400">
+              <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-[var(--text-secondary)]">
                 Step 1 · Player Count
               </span>
               <span className="text-xs font-extrabold text-[var(--accent-mint)]">
@@ -196,7 +196,7 @@ export default function GameSetup() {
                   className={`py-3 rounded-2xl font-display font-extrabold text-sm transition-all cursor-pointer ${
                     playerCount === count
                       ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/20 active:scale-95'
-                      : 'bg-[#1A1F2C] text-slate-300 border border-white/5 hover:border-white/20'
+                      : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-custom)] hover:border-[var(--border-bright)]'
                   }`}
                 >
                   {count} Players
@@ -208,10 +208,10 @@ export default function GameSetup() {
           {/* STEP 2: Register Player Cards */}
           <div className="space-y-3">
             <div className="flex justify-between items-center px-1">
-              <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-slate-400">
+              <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-[var(--text-secondary)]">
                 Step 2 · Register Player QR Cards
               </span>
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[10px] text-[var(--text-secondary)]">
                 {registeredPlayers.slice(0, playerCount).filter((p) => p.isRegistered).length} / {playerCount} Ready
               </span>
             </div>
@@ -225,7 +225,7 @@ export default function GameSetup() {
                   className={`p-4 sm:p-5 rounded-3xl border transition-all ${
                     isConfigured
                       ? 'border-emerald-500/40 bg-emerald-500/5 shadow-md shadow-emerald-950/20'
-                      : 'border-white/10 bg-[#12151F]'
+                      : 'border-[var(--border-custom)] bg-[var(--bg-secondary)]'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -236,7 +236,7 @@ export default function GameSetup() {
                           style={{ backgroundColor: player.color }}
                         />
                       )}
-                      <span className="font-display font-black text-sm text-white">
+                      <span className="font-display font-black text-sm text-[var(--text-primary)]">
                         Player {idx + 1}
                       </span>
                     </div>
@@ -246,7 +246,7 @@ export default function GameSetup() {
                         <CheckCircle className="w-3 h-3" /> Ready
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                         Scan Card
                       </span>
                     )}
@@ -254,13 +254,13 @@ export default function GameSetup() {
 
                   <div className="flex gap-2.5">
                     <div className="flex-1 relative">
-                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
                       <input
                         type="text"
                         placeholder="Enter name..."
                         value={player.name}
                         onChange={(e) => handleUpdatePlayer(idx, { name: e.target.value })}
-                        className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-[#07090E] border border-white/10 text-white text-xs font-bold focus:outline-none focus:border-emerald-400 placeholder-slate-600"
+                        className="w-full pl-10 pr-3 py-2.5 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs font-bold focus:outline-none focus:border-[var(--accent-mint)] placeholder-[var(--text-muted)]"
                       />
                     </div>
 
@@ -287,7 +287,7 @@ export default function GameSetup() {
                         borderLeftColor: player.color,
                       }}
                     >
-                      <span className="text-[9px] uppercase tracking-widest font-extrabold text-slate-400">Linked QR Token</span>
+                      <span className="text-[9px] uppercase tracking-widest font-extrabold text-[var(--text-secondary)]">Linked QR Token</span>
                       <span className="font-mono font-bold text-xs tracking-wider" style={{ color: player.color }}>
                         {player.playerCode}
                       </span>
@@ -299,14 +299,14 @@ export default function GameSetup() {
           </div>
 
           {/* STEP 3: Starting Economy */}
-          <div className="p-5 rounded-3xl bg-[#12151F] border border-white/10 space-y-3 shadow-xl">
+          <div className="p-5 rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] space-y-3 shadow-xl">
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-slate-400">
+              <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-[var(--text-secondary)]">
                 Step 3 · Starting Cash Capital (₹)
               </span>
               <button
                 onClick={() => setStartingBalance(10000)}
-                className="text-[10px] font-bold text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                className="text-[10px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1 cursor-pointer transition-colors"
               >
                 <RefreshCcw className="w-3 h-3 text-amber-400" />
                 Reset ₹10k
@@ -332,7 +332,7 @@ export default function GameSetup() {
                   }
                 }}
                 placeholder="10000"
-                className="flex-1 px-4 py-3 rounded-2xl bg-[#07090E] border border-white/10 text-white font-mono text-sm font-extrabold focus:outline-none focus:border-emerald-400"
+                className="flex-1 px-4 py-3 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-primary)] font-mono text-sm font-extrabold focus:outline-none focus:border-[var(--accent-mint)]"
               />
             </div>
 
@@ -345,7 +345,7 @@ export default function GameSetup() {
                   className={`flex-1 py-2.5 rounded-2xl border text-xs font-extrabold transition-all cursor-pointer ${
                     Number(startingBalance) === preset
                       ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                      : 'bg-[#1A1F2C] border-white/5 text-slate-400 hover:text-white'
+                      : 'bg-[var(--bg-elevated)] border-[var(--border-custom)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   ₹{preset.toLocaleString()}
@@ -358,7 +358,7 @@ export default function GameSetup() {
       </div>
 
       {/* ── FIXED FLOATING FOOTER ── */}
-      <div className="flex-none px-5 pt-3 pb-8 border-t border-white/10 bg-[#0B0D14]/95 backdrop-blur-md z-20" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
+      <div className="flex-none px-5 pt-3 pb-8 border-t border-[var(--border-custom)] bg-[var(--bg-primary)]/95 backdrop-blur-md z-20" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
         <button
           onClick={handleStartGame}
           className="flex items-center justify-center gap-2.5 w-full max-w-md mx-auto py-4 rounded-2xl font-display font-black text-base bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 hover:opacity-95 active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/20 cursor-pointer"

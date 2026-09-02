@@ -36,5 +36,5 @@ export default function QRCodeImage({
     }).catch((err) => console.error('QR generation error:', err));
   }, [value, size, fgColor, bgColor]);
 
-  return <canvas ref={canvasRef} width={size} height={size} className={className} />;
+  return <canvas ref={canvasRef} width={size} height={size} className={`rounded-lg overflow-hidden ${className}`} />;
 }

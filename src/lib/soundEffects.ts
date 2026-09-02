@@ -159,6 +159,73 @@ class SoundEffectsManager {
   }
 
   /**
+   * Countdown tick sound for auction (10 to 1 seconds)
+   */
+  playCountdownTick(secondsLeft: number) {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      // Pitch gets higher as time approaches 0
+      const pitch = secondsLeft <= 3 ? 1200 : secondsLeft <= 5 ? 900 : 700;
+      const volume = secondsLeft <= 3 ? 0.25 : 0.15;
+
+      osc.type = secondsLeft <= 3 ? 'sawtooth' : 'sine';
+      osc.frequency.setValueAtTime(pitch, now);
+
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.08);
+
+      if (secondsLeft <= 3) {
+        this.triggerHapticVibration([40]);
+      }
+    } catch {
+      // AudioContext fallback ignored
+    }
+  }
+
+  /**
+   * Final auction gavel drop sound
+   */
+  playAuctionEndSound() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      // Double gavel thud
+      [0, 0.12].forEach((t) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, now + t);
+        osc.frequency.exponentialRampToValueAtTime(40, now + t + 0.15);
+
+        gain.gain.setValueAtTime(0.3, now + t);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.15);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + t);
+        osc.stop(now + t + 0.15);
+      });
+      this.triggerHapticVibration([60, 50, 60]);
+    } catch {
+      // AudioContext fallback ignored
+    }
+  }
+
+  /**
    * Device haptic vibration trigger for mobile browsers
    */
   triggerHapticVibration(pattern: number[] = [40, 50, 40]) {

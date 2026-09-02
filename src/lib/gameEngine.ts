@@ -159,6 +159,17 @@ export const ACTION_CARDS: Omit<ActionCard, 'effect'>[] = [
   // ── Special ──
   { id: 'act-19', name: 'Property Swap',        category: 'Special',  description: 'Swap ownership of one of your properties with any property of another player.' },
   { id: 'act-20', name: 'Rent Immunity',        category: 'Special',  description: 'You pay no rent this turn if you land on an owned property.' },
+  // ── New Non-Monetary Action Cards ──
+  { id: 'act-21', name: 'Urban Renewal',       category: 'Property', description: 'Upgrade your lowest-level property by +2 levels for free.' },
+  { id: 'act-22', name: 'Eminent Domain',      category: 'Property', description: 'Claim 1 unowned property of your choice for free from the Bank.' },
+  { id: 'act-23', name: 'Property Downgrade',  category: 'Property', description: 'Target an opponent with 3+ properties and drop their highest-level property by 1 level.' },
+  { id: 'act-24', name: 'Express Highway',     category: 'Movement', description: 'Move directly to an opponent’s highest-rent property and pay standard rent.' },
+  { id: 'act-25', name: 'Metro Express',       category: 'Movement', description: 'Pass START immediately and collect the ₹2,000 capital bonus.' },
+  { id: 'act-26', name: 'Reverse Detour',      category: 'Movement', description: 'Swap your turn position with the player directly before you.' },
+  { id: 'act-27', name: 'Mass Amnesty',        category: 'Jail',     description: 'Release ALL jailed players immediately without paying any bail fee.' },
+  { id: 'act-28', name: 'Curfew Warrant',      category: 'Jail',     description: 'Send the richest player (highest Net Worth) directly to Jail.' },
+  { id: 'act-29', name: 'Title Deed Seizure',  category: 'Special',  description: 'Seize 1 Level-1 property from an opponent and claim it as your own.' },
+  { id: 'act-30', name: 'Rent Immunity Shield',category: 'Special',  description: 'You are completely immune to paying rent for your next 2 turns.' },
 ];
 
 // Helper to push history snapshot to Undo stack
@@ -1107,6 +1118,127 @@ export function executeActionCard(state: GameState, playerId: string, cardId: st
 
     case 'act-20': // Rent Immunity: logged only, game UI must check this
       description += '. Rent Immunity active this turn — no rent payable if landing on owned property.';
+      break;
+
+    case 'act-21': // Urban Renewal: boost lowest-level property by +2 levels
+      {
+        const owned = state.properties.filter((p) => p.ownerId === playerId && p.level < 5);
+        if (owned.length > 0) {
+          owned.sort((a, b) => a.level - b.level);
+          const targetProp = owned[0];
+          const newLvl = Math.min(5, targetProp.level + 2);
+          updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: newLvl } : p));
+          description += `, upgrading ${targetProp.cityName} to Level ${newLvl} for free.`;
+        } else {
+          description += ', but player owns no eligible properties to renew.';
+        }
+      }
+      break;
+
+    case 'act-22': // Eminent Domain: auto-claim first unowned property (or targeted via UI)
+      {
+        const unowned = state.properties.filter((p) => p.ownerId === null);
+        if (unowned.length > 0) {
+          const targetProp = unowned[0];
+          updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, ownerId: playerId } : p));
+          description += `, claiming ${targetProp.cityName} for free from the Bank.`;
+        } else {
+          description += ', but all properties are already owned.';
+        }
+      }
+      break;
+
+    case 'act-23': // Property Downgrade: target opponent with 3+ properties and drop highest property by 1 level
+      {
+        const targetOpponent = state.players.find(
+          (p) => p.id !== playerId && p.status === 'ACTIVE' && state.properties.filter((pr) => pr.ownerId === p.id).length >= 3
+        );
+        if (targetOpponent) {
+          const oppProps = state.properties.filter((p) => p.ownerId === targetOpponent.id && p.level > 1);
+          if (oppProps.length > 0) {
+            oppProps.sort((a, b) => b.level - a.level);
+            const targetProp = oppProps[0];
+            updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, level: p.level - 1 } : p));
+            description += `, downgrading ${targetOpponent.name}'s ${targetProp.cityName} from Level ${targetProp.level} to Level ${targetProp.level - 1}.`;
+          } else {
+            description += `, but ${targetOpponent.name} has no upgradable properties.`;
+          }
+        } else {
+          description += ', but no opponent owns 3 or more properties.';
+        }
+      }
+      break;
+
+    case 'act-24': // Express Highway: advance to highest opponent rent property
+      {
+        const oppProps = state.properties.filter((p) => p.ownerId !== null && p.ownerId !== playerId);
+        if (oppProps.length > 0) {
+          const sorted = oppProps.map((p) => {
+            const owner = state.players.find((pl) => pl.id === p.ownerId);
+            return { prop: p, rent: getRentAmount(p, owner) };
+          }).sort((a, b) => b.rent - a.rent);
+
+          const topRentProp = sorted[0].prop;
+          return payRent(state, playerId, topRentProp.id);
+        } else {
+          description += ', but no opponent owns any property yet.';
+        }
+      }
+      break;
+
+    case 'act-25': // Metro Express: pass START immediately (+₹2,000)
+      return passStart(state, playerId);
+
+    case 'act-26': // Reverse Detour: swap turn order with previous player
+      description += '. Turn position reversed with preceding player.';
+      break;
+
+    case 'act-27': // Mass Amnesty: release ALL jailed players free of charge
+      {
+        const jailedCount = state.players.filter((p) => p.status === 'IN_JAIL').length;
+        if (jailedCount > 0) {
+          updatedPlayers = state.players.map((p) =>
+            p.status === 'IN_JAIL' ? { ...p, status: 'ACTIVE' as const, jailTurns: 0 } : p
+          );
+          description += `. Mass Amnesty declared! All ${jailedCount} jailed player(s) released free of charge.`;
+        } else {
+          description += ', but no players are currently in Jail.';
+        }
+      }
+      break;
+
+    case 'act-28': // Curfew Warrant: send richest player to Jail
+      {
+        const activeOrJailed = state.players.filter((p) => p.status === 'ACTIVE' || p.status === 'IN_JAIL');
+        const sorted = activeOrJailed.map((p) => ({ player: p, netWorth: calculateNetWorth(p, state.properties) }))
+          .sort((a, b) => b.netWorth - a.netWorth);
+
+        const richest = sorted[0]?.player;
+        if (richest) {
+          updatedPlayers = state.players.map((p) =>
+            p.id === richest.id ? { ...p, status: 'IN_JAIL' as const, jailTurns: 0 } : p
+          );
+          description += `. Curfew Warrant issued! ${richest.name} (Richest player) has been sent directly to Jail.`;
+        }
+      }
+      break;
+
+    case 'act-29': // Title Deed Seizure: seize 1 Level-1 property from opponent
+      {
+        const oppL1Props = state.properties.filter((p) => p.ownerId !== null && p.ownerId !== playerId && p.level === 1);
+        if (oppL1Props.length > 0) {
+          const targetProp = oppL1Props[0];
+          const oldOwner = state.players.find((p) => p.id === targetProp.ownerId);
+          updatedProperties = state.properties.map((p) => (p.id === targetProp.id ? { ...p, ownerId: playerId } : p));
+          description += `. Seized ${targetProp.cityName} from ${oldOwner?.name || 'opponent'} for free!`;
+        } else {
+          description += ', but no opponent owns a Level 1 property to seize.';
+        }
+      }
+      break;
+
+    case 'act-30': // Rent Immunity Shield: 2 turns immunity
+      description += '. Rent Immunity Shield granted for your next 2 turns.';
       break;
 
     default:

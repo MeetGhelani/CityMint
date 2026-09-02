@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Gavel, Clock, ChevronRight, X, AlertCircle } from 'lucide-react';
+import { Gavel, Clock, X, AlertCircle, ShoppingBag } from 'lucide-react';
 import { Property, Player, PROPERTY_GROUPS } from '@/lib/gameEngine';
 import { soundEffects } from '@/lib/soundEffects';
 
@@ -20,25 +20,35 @@ export default function AuctionModal({
 }: AuctionModalProps) {
   const group = PROPERTY_GROUPS[property.groupId] || { name: 'City', color: '#10B981', gradientFrom: '#047857', gradientTo: '#022C22' };
   
+  const activePlayers = players.filter((p) => p.status === 'ACTIVE' || p.status === 'IN_JAIL');
+  
   // Initial bid starts at 50% of base valuation (min ₹100)
   const initialBid = Math.max(100, Math.floor(property.purchasePrice / 2));
   const [currentBid, setCurrentBid] = useState<number>(initialBid);
   const [leadingPlayerId, setLeadingPlayerId] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(15);
-  const [customBidAmount, setCustomBidAmount] = useState<string>('');
+  const [timeLeft, setTimeLeft] = useState<number>(20); // 20-second timer
 
-  const activePlayers = players.filter((p) => p.status === 'ACTIVE' || p.status === 'IN_JAIL');
+  // Direct sale states when no bids placed
+  const [directBuyerId, setDirectBuyerId] = useState<string>(activePlayers[0]?.id || '');
+  const [directPrice, setDirectPrice] = useState<string>(property.purchasePrice.toString());
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 15-second Countdown Timer
+  // 20-second Countdown Timer with Web Audio Beeps & End Sound
   useEffect(() => {
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
+          soundEffects.playAuctionEndSound();
           return 0;
         }
-        return prev - 1;
+        const nextTime = prev - 1;
+        // Sound tick effect for 10s to 1s
+        if (nextTime <= 10 && nextTime >= 1) {
+          soundEffects.playCountdownTick(nextTime);
+        }
+        return nextTime;
       });
     }, 1000);
 
@@ -54,7 +64,6 @@ export default function AuctionModal({
     const newBid = currentBid + increment;
     if (newBid > player.balance) return; // Disallow bids exceeding cash balance
 
-    // Sound effect
     soundEffects.playScanBeep();
     soundEffects.triggerHapticVibration([30, 40]);
 
@@ -67,32 +76,27 @@ export default function AuctionModal({
     }
   };
 
-  const handleCustomBid = (playerId: string) => {
-    const amt = parseInt(customBidAmount, 10);
-    if (isNaN(amt) || amt <= currentBid) return;
-
-    const player = players.find((p) => p.id === playerId);
-    if (!player || amt > player.balance) return;
-
-    soundEffects.playScanBeep();
-    soundEffects.triggerHapticVibration([30, 40]);
-
-    setCurrentBid(amt);
-    setLeadingPlayerId(playerId);
-    setCustomBidAmount('');
-
-    if (timeLeft < 3) {
-      setTimeLeft(5);
-    }
-  };
-
-  const handleFinalize = () => {
+  const handleFinalizeWinner = () => {
     if (!leadingPlayerId) return;
     soundEffects.playCashChime();
     onConcludeAuction(leadingPlayerId, currentBid);
   };
 
+  const handleDirectSale = () => {
+    if (!directBuyerId) return;
+    const buyer = players.find((p) => p.id === directBuyerId);
+    const salePrice = parseInt(directPrice, 10);
+    if (!buyer || isNaN(salePrice) || salePrice <= 0) return;
+    if (salePrice > buyer.balance) return;
+
+    soundEffects.playCashChime();
+    onConcludeAuction(directBuyerId, salePrice);
+  };
+
   const leadingPlayer = players.find((p) => p.id === leadingPlayerId);
+  const directBuyer = players.find((p) => p.id === directBuyerId);
+  const isTimeEnded = timeLeft === 0;
+  const isNoBidsDeadState = isTimeEnded && !leadingPlayerId;
 
   return (
     <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
@@ -127,7 +131,9 @@ export default function AuctionModal({
               <Clock className="w-3.5 h-3.5 text-amber-400" />
               Time Remaining
             </span>
-            <span className={`font-mono font-black text-lg px-2.5 py-0.5 rounded-full border ${timeLeft <= 3 ? 'bg-red-500/20 text-red-400 border-red-500/40 animate-pulse' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+            <span className={`font-mono font-black text-lg px-2.5 py-0.5 rounded-full border ${
+              timeLeft <= 5 ? 'bg-red-500/20 text-red-400 border-red-500/40 animate-pulse' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+            }`}>
               {timeLeft}s
             </span>
           </div>
@@ -149,76 +155,140 @@ export default function AuctionModal({
                     <span className="font-display font-bold text-xs text-[var(--text-primary)]">{leadingPlayer.name}</span>
                   </>
                 ) : (
-                  <span className="text-xs text-[var(--text-muted)] italic">No bids yet</span>
+                  <span className="text-xs text-amber-400/90 italic font-medium">
+                    {isTimeEnded ? 'No bids placed' : 'No bids yet'}
+                  </span>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Player Quick Bidding Grid */}
-        <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
-          <label className="text-[10px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)]">
-            Tap Player to Raise Bid:
-          </label>
+        {/* ── CONDITIONAL VIEW: Normal Bidding vs Direct Sale Panel ── */}
+        {isNoBidsDeadState ? (
+          /* NO BIDS PLACED — DIRECT SALE / PASS PANEL */
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 text-amber-400">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="text-xs font-extrabold uppercase tracking-wide">No Bids Raised (Auction Passed)</span>
+            </div>
+            <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
+              No bids were placed during the 20s auction timer. The banker can sell directly to a player or pass the property.
+            </p>
 
-          <div className="space-y-2">
-            {activePlayers.map((player) => {
-              const isLeading = player.id === leadingPlayerId;
-              const canBid100 = player.balance >= currentBid + 100;
-              const canBid500 = player.balance >= currentBid + 500;
-
-              return (
-                <div
-                  key={player.id}
-                  className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
-                    isLeading
-                      ? 'bg-amber-500/10 border-amber-500/40 shadow-sm'
-                      : 'bg-[var(--bg-primary)]/50 border-[var(--border-custom)]'
-                  }`}
+            {/* Direct Sale Controls */}
+            <div className="space-y-2 pt-1 border-t border-amber-500/20">
+              <div>
+                <label className="text-[9px] uppercase font-bold text-[var(--text-secondary)] block mb-1">Select Buyer</label>
+                <select
+                  value={directBuyerId}
+                  onChange={(e) => setDirectBuyerId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
                 >
-                  <div className="flex items-center gap-2 min-w-0 pr-2">
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: player.color }} />
-                    <div className="min-w-0">
-                      <p className="font-display font-bold text-xs text-[var(--text-primary)] truncate flex items-center gap-1">
-                        {player.name}
-                        {isLeading && <span className="text-[8px] bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.2 rounded-full">High</span>}
-                      </p>
-                      <p className="text-[9px] text-[var(--text-secondary)]">Cash: ₹{player.balance}</p>
-                    </div>
-                  </div>
+                  {activePlayers.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} (Cash: ₹{p.balance.toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      disabled={!canBid100 || timeLeft === 0}
-                      onClick={() => handlePlaceBid(player.id, 100)}
-                      className="px-2.5 py-1.5 rounded-lg bg-[var(--accent-mint)]/15 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] font-extrabold text-[10px] hover:bg-[var(--accent-mint)]/25 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none"
-                    >
-                      +₹100
-                    </button>
-                    <button
-                      disabled={!canBid500 || timeLeft === 0}
-                      onClick={() => handlePlaceBid(player.id, 500)}
-                      className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-[10px] hover:bg-amber-500/25 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none"
-                    >
-                      +₹500
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+              <div>
+                <label className="text-[9px] uppercase font-bold text-[var(--text-secondary)] block mb-1">Sale Price (₹)</label>
+                <input
+                  type="number"
+                  value={directPrice}
+                  onChange={(e) => setDirectPrice(e.target.value)}
+                  placeholder="Enter sale price"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
+                />
+              </div>
+
+              <button
+                disabled={!directBuyerId || !directPrice || parseInt(directPrice, 10) <= 0 || (directBuyer && parseInt(directPrice, 10) > directBuyer.balance)}
+                onClick={handleDirectSale}
+                className="w-full py-2.5 rounded-xl font-display font-extrabold text-xs uppercase tracking-wider bg-[var(--accent-mint)] text-[var(--bg-primary)] disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Sell to {directBuyer?.name || 'Player'} for ₹{parseInt(directPrice, 10) || 0}</span>
+              </button>
+            </div>
+
+            {/* Pass / Leave Unowned */}
+            <button
+              onClick={onClose}
+              className="w-full py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] active:scale-95 transition-all"
+            >
+              Pass Property (Leave Unowned)
+            </button>
           </div>
-        </div>
+        ) : (
+          /* REGULAR BIDDING GRID */
+          <>
+            <div className="space-y-2 max-h-[35vh] overflow-y-auto pr-1">
+              <label className="text-[10px] uppercase font-extrabold tracking-wider text-[var(--text-secondary)]">
+                Tap Player to Raise Bid:
+              </label>
 
-        {/* Conclude Auction Button */}
-        <button
-          disabled={!leadingPlayerId}
-          onClick={handleFinalize}
-          className="w-full py-3.5 rounded-xl font-display font-extrabold text-xs uppercase tracking-wider bg-[var(--accent-mint)] text-[var(--bg-primary)] disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
-        >
-          <Gavel className="w-4 h-4" />
-          <span>Award Property to {leadingPlayer?.name || 'Winner'}</span>
-        </button>
+              <div className="space-y-2">
+                {activePlayers.map((player) => {
+                  const isLeading = player.id === leadingPlayerId;
+                  const canBid100 = player.balance >= currentBid + 100;
+                  const canBid500 = player.balance >= currentBid + 500;
+
+                  return (
+                    <div
+                      key={player.id}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
+                        isLeading
+                          ? 'bg-amber-500/10 border-amber-500/40 shadow-sm'
+                          : 'bg-[var(--bg-primary)]/50 border-[var(--border-custom)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: player.color }} />
+                        <div className="min-w-0">
+                          <p className="font-display font-bold text-xs text-[var(--text-primary)] truncate flex items-center gap-1">
+                            {player.name}
+                            {isLeading && <span className="text-[8px] bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.2 rounded-full">High</span>}
+                          </p>
+                          <p className="text-[9px] text-[var(--text-secondary)]">Cash: ₹{player.balance}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          disabled={!canBid100 || isTimeEnded}
+                          onClick={() => handlePlaceBid(player.id, 100)}
+                          className="px-2.5 py-1.5 rounded-lg bg-[var(--accent-mint)]/15 border border-[var(--accent-mint)]/30 text-[var(--accent-mint)] font-extrabold text-[10px] hover:bg-[var(--accent-mint)]/25 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none"
+                        >
+                          +₹100
+                        </button>
+                        <button
+                          disabled={!canBid500 || isTimeEnded}
+                          onClick={() => handlePlaceBid(player.id, 500)}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-extrabold text-[10px] hover:bg-amber-500/25 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none"
+                        >
+                          +₹500
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Conclude Auction Button */}
+            <button
+              disabled={!leadingPlayerId}
+              onClick={handleFinalizeWinner}
+              className="w-full py-3.5 rounded-xl font-display font-extrabold text-xs uppercase tracking-wider bg-[var(--accent-mint)] text-[var(--bg-primary)] disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              <Gavel className="w-4 h-4" />
+              <span>Award Property to {leadingPlayer?.name || 'Winner'}</span>
+            </button>
+          </>
+        )}
 
       </div>
     </div>

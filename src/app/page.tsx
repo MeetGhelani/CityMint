@@ -79,7 +79,7 @@ export default function Home() {
 
   return (
     <InstallGate>
-      <main className="min-h-screen flex flex-col justify-between px-4 sm:px-6 py-4 sm:py-6 bg-[#07090E] text-white relative overflow-hidden font-sans select-none">
+      <main className="min-h-screen flex flex-col justify-between px-4 sm:px-6 py-4 sm:py-6 bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden font-sans select-none">
         
         {/* Visual Skyline Glow Background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -116,7 +116,7 @@ export default function Home() {
           </h1>
 
           {/* Subtitle Divider */}
-          <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">
+          <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
             <span className="w-8 h-[1px] bg-gradient-to-r from-transparent to-amber-500/60" />
             <span className="text-amber-300/90 font-mono tracking-[0.25em]">OWN. BUILD. PROSPER.</span>
             <span className="w-8 h-[1px] bg-gradient-to-l from-transparent to-amber-500/60" />
@@ -171,51 +171,51 @@ export default function Home() {
             {/* 1. Rulebook Card */}
             <button
               onClick={() => setShowRules(true)}
-              className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#1C1635] to-[#120E24] border border-purple-500/20 flex flex-col justify-between h-36 text-left group hover:border-purple-500/40 active:scale-95 transition-all shadow-lg shadow-purple-950/30 cursor-pointer relative overflow-hidden"
+              className="p-3.5 sm:p-4 rounded-3xl bg-[var(--bg-secondary)] border border-purple-500/30 flex flex-col justify-between h-36 text-left group hover:border-purple-500/60 active:scale-95 transition-all shadow-md shadow-purple-500/10 cursor-pointer relative overflow-hidden"
             >
-              <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-lg mb-2">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-lg mb-2">
                 📖
               </div>
               <div>
-                <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">RULEBOOK</h4>
-                <p className="text-[9px] text-purple-200/60 leading-tight mt-1">Learn the game rules</p>
+                <h4 className="font-display font-extrabold text-xs text-[var(--text-primary)] uppercase tracking-wider leading-tight">RULEBOOK</h4>
+                <p className="text-[9px] text-[var(--text-secondary)] leading-tight mt-1">Learn the game rules</p>
               </div>
-              <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
-                <ChevronRight className="w-3.5 h-3.5 text-purple-300" />
+              <div className="w-6 h-6 rounded-full bg-purple-500/15 border border-purple-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
+                <ChevronRight className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
               </div>
             </button>
 
             {/* 2. History Card */}
             <button
               onClick={() => setShowHistory(true)}
-              className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#2B1F13] to-[#1A120B] border border-amber-500/20 flex flex-col justify-between h-36 text-left group hover:border-amber-500/40 active:scale-95 transition-all shadow-lg shadow-amber-950/30 cursor-pointer relative overflow-hidden"
+              className="p-3.5 sm:p-4 rounded-3xl bg-[var(--bg-secondary)] border border-amber-500/30 flex flex-col justify-between h-36 text-left group hover:border-amber-500/60 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer relative overflow-hidden"
             >
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-lg mb-2">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-lg mb-2">
                 🕒
               </div>
               <div>
-                <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">HISTORY ({historyItems.length})</h4>
-                <p className="text-[9px] text-amber-200/60 leading-tight mt-1">View your past games</p>
+                <h4 className="font-display font-extrabold text-xs text-[var(--text-primary)] uppercase tracking-wider leading-tight">HISTORY ({historyItems.length})</h4>
+                <p className="text-[9px] text-[var(--text-secondary)] leading-tight mt-1">View your past games</p>
               </div>
-              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
-                <ChevronRight className="w-3.5 h-3.5 text-amber-300" />
+              <div className="w-6 h-6 rounded-full bg-amber-500/15 border border-amber-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
+                <ChevronRight className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               </div>
             </button>
 
             {/* 3. QR Cards Card */}
             <Link
               href="/qr-cards"
-              className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-b from-[#0F2238] to-[#0A1624] border border-cyan-500/20 flex flex-col justify-between h-36 text-left group hover:border-cyan-500/40 active:scale-95 transition-all shadow-lg shadow-cyan-950/30 cursor-pointer relative overflow-hidden"
+              className="p-3.5 sm:p-4 rounded-3xl bg-[var(--bg-secondary)] border border-cyan-500/30 flex flex-col justify-between h-36 text-left group hover:border-cyan-500/60 active:scale-95 transition-all shadow-md shadow-cyan-500/10 cursor-pointer relative overflow-hidden"
             >
-              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-lg mb-2">
+              <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-lg mb-2">
                 🔲
               </div>
               <div>
-                <h4 className="font-display font-extrabold text-xs text-white uppercase tracking-wider leading-tight">QR CARDS</h4>
-                <p className="text-[9px] text-cyan-200/60 leading-tight mt-1">Manage player &amp; property cards</p>
+                <h4 className="font-display font-extrabold text-xs text-[var(--text-primary)] uppercase tracking-wider leading-tight">QR CARDS</h4>
+                <p className="text-[9px] text-[var(--text-secondary)] leading-tight mt-1">Manage player &amp; property cards</p>
               </div>
-              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
-                <ChevronRight className="w-3.5 h-3.5 text-cyan-300" />
+              <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center self-start mt-2 group-hover:translate-x-0.5 transition-transform">
+                <ChevronRight className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
               </div>
             </Link>
 
@@ -235,9 +235,9 @@ export default function Home() {
 
           <div className="grid grid-cols-3 gap-2">
             {[
-              { title: 'SMART BANKER', desc: 'Auto rent & buy calculation', color: 'border-emerald-500/20 bg-[#0A1A17]', icon: Landmark, iconColor: 'text-emerald-400' },
-              { title: 'QR SCANNING', desc: 'Scan cards & play instantly', color: 'border-cyan-500/20 bg-[#0A1822]', icon: Scan, iconColor: 'text-cyan-400' },
-              { title: 'OFFLINE FIRST', desc: 'Play anytime, anywhere', color: 'border-pink-500/20 bg-[#1C0F1A]', icon: WifiOff, iconColor: 'text-pink-400' },
+              { title: 'SMART BANKER', desc: 'Auto rent & buy calculation', color: 'border-emerald-500/20 bg-[var(--bg-secondary)]', icon: Landmark, iconColor: 'text-emerald-400' },
+              { title: 'QR SCANNING', desc: 'Scan cards & play instantly', color: 'border-cyan-500/20 bg-[var(--bg-secondary)]', icon: Scan, iconColor: 'text-cyan-400' },
+              { title: 'OFFLINE FIRST', desc: 'Play anytime, anywhere', color: 'border-pink-500/20 bg-[var(--bg-secondary)]', icon: WifiOff, iconColor: 'text-pink-400' },
             ].map((b) => {
               const IconComp = b.icon;
               return (
@@ -246,8 +246,8 @@ export default function Home() {
                   className={`p-3 rounded-2xl border ${b.color} flex flex-col items-center text-center space-y-1 shadow-sm`}
                 >
                   <IconComp className={`w-5 h-5 ${b.iconColor} mb-0.5`} />
-                  <h5 className="font-display font-extrabold text-[9px] text-white uppercase tracking-wider leading-tight">{b.title}</h5>
-                  <p className="text-[8px] text-slate-400 leading-tight">{b.desc}</p>
+                  <h5 className="font-display font-extrabold text-[9px] text-[var(--text-primary)] uppercase tracking-wider leading-tight">{b.title}</h5>
+                  <p className="text-[8px] text-[var(--text-secondary)] leading-tight">{b.desc}</p>
                 </div>
               );
             })}
@@ -256,14 +256,14 @@ export default function Home() {
 
         {/* ── FLOATING BOTTOM DOCK FOOTER ── */}
         <div className="w-full max-w-sm mx-auto z-10 pt-2 pb-1">
-          <div className="px-4 py-2.5 rounded-2xl bg-[#11141F]/90 border border-white/10 backdrop-blur-md flex items-center justify-between shadow-2xl">
-            <span className="text-[10px] font-mono text-slate-400">
+          <div className="px-4 py-2.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] backdrop-blur-md flex items-center justify-between shadow-2xl">
+            <span className="text-[10px] font-mono text-[var(--text-secondary)]">
               CityMint Banker PWA v1.0
             </span>
 
             <button
               onClick={() => setShowSettings(true)}
-              className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+              className="w-8 h-8 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] active:scale-95 transition-all cursor-pointer"
               title="App Settings"
             >
               <Settings className="w-4 h-4" />
@@ -285,17 +285,17 @@ export default function Home() {
         {/* Notification Modal */}
         {showNotificationModal && (
           <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
-            <div className="w-full max-w-xs bg-[#12151F] border border-white/10 rounded-3xl p-5 shadow-2xl text-center space-y-3 animate-in zoom-in-95">
+            <div className="w-full max-w-xs bg-[var(--bg-secondary)] border border-[var(--border-custom)] rounded-3xl p-5 shadow-2xl text-center space-y-3 animate-in zoom-in-95">
               <div className="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-lg">
                 🔔
               </div>
-              <h3 className="font-display font-extrabold text-base text-white">App System Status</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <h3 className="font-display font-extrabold text-base text-[var(--text-primary)]">App System Status</h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 CityMint Banker PWA is running smoothly in offline-first mode. All local games are saved automatically.
               </p>
               <button
                 onClick={() => setShowNotificationModal(false)}
-                className="w-full py-2.5 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-xs active:scale-95 transition-all"
+                className="w-full py-2.5 rounded-xl bg-[var(--accent-mint)] text-[var(--bg-primary)] font-bold text-xs active:scale-95 transition-all cursor-pointer"
               >
                 Got It
               </button>
@@ -306,34 +306,34 @@ export default function Home() {
         {/* Settings Modal */}
         {showSettings && (
           <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-6 animate-in fade-in duration-200">
-            <div className="w-full max-w-sm bg-[#12151F] border border-white/10 rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-250 text-left relative">
+            <div className="w-full max-w-sm bg-[var(--bg-secondary)] border border-[var(--border-custom)] rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-250 text-left relative">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-display font-black text-xl text-white">App Settings</h3>
+                <h3 className="font-display font-black text-xl text-[var(--text-primary)]">App Settings</h3>
                 <button 
                   onClick={() => setShowSettings(false)}
-                  className="w-8 h-8 rounded-full bg-[#1E2330] border border-white/10 flex items-center justify-center text-slate-300 hover:text-white"
+                  className="w-8 h-8 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Audio Toggle */}
-              <div className="flex items-center justify-between py-4 border-b border-white/10">
+              <div className="flex items-center justify-between py-4 border-b border-[var(--border-custom)]">
                 <div>
-                  <h4 className="font-semibold text-xs text-white">Sound Effects</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Scanner beeps &amp; cash chimes</p>
+                  <h4 className="font-semibold text-xs text-[var(--text-primary)]">Sound Effects</h4>
+                  <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Scanner beeps &amp; cash chimes</p>
                 </div>
                 <button
                   onClick={handleAudioToggle}
-                  className={`w-12 h-6 rounded-full p-1 transition-all ${audioEnabled ? 'bg-emerald-400' : 'bg-slate-700'}`}
+                  className={`w-12 h-6 rounded-full p-1 transition-all cursor-pointer ${audioEnabled ? 'bg-[var(--accent-mint)]' : 'bg-[var(--bg-elevated)]'}`}
                 >
-                  <div className={`w-4 h-4 rounded-full bg-slate-950 transition-all ${audioEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                  <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${audioEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                 </button>
               </div>
 
               {/* Themes Option */}
               <div className="py-4 space-y-3">
-                <h4 className="font-semibold text-xs text-white">Visual Color Theme</h4>
+                <h4 className="font-semibold text-xs text-[var(--text-primary)]">Visual Color Theme</h4>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'theme-citymint', name: 'Obsidian', color: '#00E5A0' },
@@ -343,10 +343,10 @@ export default function Home() {
                     <button
                       key={th.id}
                       onClick={() => handleThemeChange(th.id)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-medium transition-all ${
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-medium transition-all cursor-pointer ${
                         theme === th.id 
-                          ? 'border-emerald-400 bg-emerald-500/10 text-white font-bold' 
-                          : 'border-white/10 bg-slate-900/60 text-slate-400 hover:bg-slate-800'
+                          ? 'border-[var(--accent-mint)] bg-[var(--accent-mint)]/10 text-[var(--text-primary)] font-bold' 
+                          : 'border-[var(--border-custom)] bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:border-[var(--text-secondary)]'
                       }`}
                     >
                       <span className="w-5 h-5 rounded-full mb-1.5 border border-white/20" style={{ backgroundColor: th.color }} />
@@ -358,7 +358,7 @@ export default function Home() {
 
               <button
                 onClick={() => setShowSettings(false)}
-                className="w-full py-3 mt-2 rounded-xl font-display font-bold bg-[#1E2330] border border-white/10 text-white text-xs hover:bg-slate-800 active:scale-95 transition-all"
+                className="w-full py-3 mt-2 rounded-xl font-display font-bold bg-[var(--bg-elevated)] border border-[var(--border-custom)] text-[var(--text-primary)] text-xs hover:bg-[var(--bg-primary)] active:scale-95 transition-all cursor-pointer"
               >
                 Close Settings
               </button>
@@ -368,15 +368,15 @@ export default function Home() {
 
         {/* History Modal */}
         {showHistory && (
-          <div className="fixed inset-0 z-50 bg-[#0A0B10] flex flex-col p-6 animate-in slide-in-from-bottom duration-250 text-left">
+          <div className="fixed inset-0 z-50 bg-[var(--bg-primary)] flex flex-col p-6 animate-in slide-in-from-bottom duration-250 text-left">
             <div className="flex justify-between items-center mb-6 safe-padding-top">
               <div className="flex items-center gap-2">
                 <History className="w-5 h-5 text-amber-400" />
-                <h3 className="font-display font-black text-xl text-white">Game History</h3>
+                <h3 className="font-display font-black text-xl text-[var(--text-primary)]">Game History</h3>
               </div>
               <button 
                 onClick={() => setShowHistory(false)}
-                className="w-8 h-8 rounded-full bg-[#1E2330] border border-white/10 flex items-center justify-center text-slate-300 hover:text-white"
+                className="w-8 h-8 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-custom)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -387,10 +387,10 @@ export default function Home() {
                 historyItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="p-5 rounded-3xl bg-[#12151F] border border-white/10 space-y-3 shadow-xl"
+                    className="p-5 rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-custom)] space-y-3 shadow-xl"
                   >
                     <div className="flex justify-between items-start">
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-[var(--text-secondary)]">
                         {new Date(item.date || item.createdAt).toLocaleDateString()} at{' '}
                         {new Date(item.date || item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
@@ -399,22 +399,22 @@ export default function Home() {
                       </span>
                     </div>
                     
-                    <h4 className="font-display font-extrabold text-lg text-white">
+                    <h4 className="font-display font-extrabold text-lg text-[var(--text-primary)]">
                       🏆 Champion: <span className="text-amber-400">{item.winnerName}</span>
                     </h4>
                     
-                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-400 border-t border-white/10 pt-3">
-                      <div>Game Code: <strong className="text-white font-mono">{item.id}</strong></div>
-                      <div>Turns Played: <strong className="text-white font-mono">{item.turnNumber}</strong></div>
+                    <div className="grid grid-cols-2 gap-3 text-xs text-[var(--text-secondary)] border-t border-[var(--border-custom)] pt-3">
+                      <div>Game Code: <strong className="text-[var(--text-primary)] font-mono">{item.id}</strong></div>
+                      <div>Turns Played: <strong className="text-[var(--text-primary)] font-mono">{item.turnNumber}</strong></div>
                       <div>Net Worth: <strong className="text-amber-400 font-mono">₹{item.winnerNetWorth?.toLocaleString() || 'N/A'}</strong></div>
-                      <div>Players Count: <strong className="text-white font-mono">{item.playerCount}</strong></div>
+                      <div>Players Count: <strong className="text-[var(--text-primary)] font-mono">{item.playerCount}</strong></div>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-40">
-                  <History className="w-12 h-12 text-slate-400 mb-3" />
-                  <p className="text-sm text-slate-300">No completed game matches found yet.</p>
+                  <History className="w-12 h-12 text-[var(--text-secondary)] mb-3" />
+                  <p className="text-sm text-[var(--text-secondary)]">No completed game matches found yet.</p>
                 </div>
               )}
             </div>

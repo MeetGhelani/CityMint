@@ -47,7 +47,7 @@ export default function QRCardsPage() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 6mm;
+            margin: 16mm 10mm 12mm 10mm;
           }
           * {
             -webkit-print-color-adjust: exact !important;
@@ -56,12 +56,76 @@ export default function QRCardsPage() {
           .print-grid-container {
             display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
-            gap: 14px !important;
+            gap: 16px 24px !important;
+            justify-items: center !important;
             zoom: 0.82;
           }
-          .print\\:break-after-page {
-            break-after: page !important;
-            page-break-after: always !important;
+          .print-grid-container > div {
+            width: 100% !important;
+            max-width: 270px !important;
+            margin: 0 auto !important;
+          }
+          /* Ensure top row cards on EVERY printed page start with top margin */
+          .print-grid-container > div:nth-child(4n + 1),
+          .print-grid-container > div:nth-child(4n + 2) {
+            margin-top: 10mm !important;
+          }
+          /* Player Cards print grid */
+          .players-print-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 24px 32px !important;
+            padding-top: 12mm !important;
+            padding-bottom: 12mm !important;
+            justify-items: center !important;
+            zoom: 1.05 !important;
+          }
+          .players-print-grid > div {
+            width: 310px !important;
+            height: 310px !important;
+            max-width: 310px !important;
+            aspect-ratio: 1 / 1 !important;
+            margin: 0 auto !important;
+          }
+          /* Action cards: zoom so 6 cards (2 rows x 3 cols) fill an A4 page */
+          .action-print-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 12px 14px !important;
+            padding-top: 8mm !important;
+            padding-bottom: 8mm !important;
+            padding-left: 5mm !important;
+            padding-right: 5mm !important;
+            justify-items: center !important;
+            zoom: 0.72 !important;
+          }
+          .action-print-grid > div {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            height: 100% !important;
+            min-height: 330px !important;
+            width: 100% !important;
+          }
+          /* Special cards grid zoom */
+          .specials-print-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 14px !important;
+            padding-top: 8mm !important;
+            padding-bottom: 8mm !important;
+            padding-left: 5mm !important;
+            padding-right: 5mm !important;
+            justify-items: center !important;
+            zoom: 0.82 !important;
+          }
+          .specials-print-grid > div {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            height: 100% !important;
+            min-height: 330px !important;
+            width: 100% !important;
           }
         }
       `}</style>
@@ -182,7 +246,7 @@ export default function QRCardsPage() {
 
         {/* ── TAB 1: PROPERTIES ── */}
         {activeTab === 'properties' && (
-          <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 print-grid-container print:grid-cols-2 print:gap-4 print:max-w-none">
+          <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 print-grid-container print:grid-cols-2 print:gap-4 print:max-w-none justify-items-center">
             {filteredProperties.map((prop, idx) => {
               const group = PROPERTY_GROUPS[prop.groupId] || { name: 'Special', color: '#888888', gradientFrom: '#333333', gradientTo: '#111111' };
               const qrPayload = `CM-PROP-${prop.id}`;
@@ -192,7 +256,7 @@ export default function QRCardsPage() {
               return (
                 <div
                   key={prop.id}
-                  className={`rounded-3xl overflow-hidden flex flex-col print:break-inside-avoid print:shadow-none transition-transform hover:-translate-y-1 ${
+                  className={`w-full max-w-[280px] rounded-3xl overflow-hidden flex flex-col print:break-inside-avoid print:shadow-none transition-transform hover:-translate-y-1 ${
                     isPageBreak ? 'print:break-after-page' : ''
                   }`}
                   style={{
@@ -203,7 +267,7 @@ export default function QRCardsPage() {
                 >
                   {/* ── High-Contrast Header Banner ── */}
                   <div
-                    className="relative overflow-hidden px-5 py-3.5 flex items-center justify-between"
+                    className="relative overflow-hidden px-3.5 py-2 flex items-center justify-between gap-1 min-h-[34px]"
                     style={{
                       background: `linear-gradient(90deg, ${group.gradientFrom} 0%, ${group.gradientTo} 100%)`,
                       borderBottom: `1px solid ${c}44`,
@@ -216,26 +280,26 @@ export default function QRCardsPage() {
                         background: `linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.4) 50%, transparent 65%)`,
                       }}
                     />
-                    <div className="flex items-center gap-2 relative z-10">
-                      <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: c }} />
-                      <span className="font-display font-black text-xs uppercase tracking-[0.18em] text-white drop-shadow-md">
+                    <div className="flex items-center gap-1.5 relative z-10 min-w-0 shrink">
+                      <span className="w-2 h-2 rounded-full shadow-sm shrink-0" style={{ backgroundColor: c }} />
+                      <span className="font-display font-black text-[9.5px] uppercase tracking-wider text-white drop-shadow-md whitespace-nowrap leading-none">
                         {group.name}
                       </span>
                     </div>
-                    <span className="text-[10px] uppercase tracking-widest font-extrabold px-2.5 py-0.5 rounded-full bg-black/40 text-white/95 backdrop-blur-sm border border-white/20 relative z-10 shadow-sm">
+                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-black/40 text-white/95 backdrop-blur-sm border border-white/20 relative z-10 shadow-sm shrink-0 whitespace-nowrap text-[8px] uppercase tracking-wider font-extrabold leading-none">
                       Title Deed
                     </span>
                   </div>
 
                   {/* ── City name ── */}
                   <div
-                    className="pt-5 pb-3 px-5 text-center relative"
+                    className="pt-3 pb-2.5 px-4 text-center relative"
                     style={{
                       background: `radial-gradient(ellipse at 50% 0%, ${c}20 0%, transparent 70%)`,
                     }}
                   >
                     <h3
-                      className="font-display font-black text-3xl uppercase tracking-tight text-white"
+                      className="font-display font-black text-2xl uppercase tracking-tight text-white"
                       style={{
                         textShadow: `0 0 20px ${c}aa, 0 2px 6px rgba(0,0,0,0.9)`,
                         letterSpacing: '0.04em',
@@ -243,18 +307,21 @@ export default function QRCardsPage() {
                     >
                       {prop.cityName}
                     </h3>
-                    <p className="text-[11px] font-bold mt-1 tracking-wide" style={{ color: c }}>
-                      Purchase Price: ₹{prop.purchasePrice.toLocaleString()}
-                    </p>
+                    <div className="mt-1 flex items-center justify-center">
+                      <span className="inline-flex items-center justify-center gap-1.5 h-6 px-3 rounded-full bg-black/60 border border-white/25 shadow-md leading-none pt-[1px]">
+                        <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-300 leading-none">Purchase Price</span>
+                        <span className="text-[11px] font-mono font-black text-amber-300 leading-none">₹{prop.purchasePrice.toLocaleString()}</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* ── Rent Table — Glass Panel ── */}
                   <div
-                    className="mx-4 mb-4 rounded-2xl overflow-hidden"
+                    className="mx-3 mb-3 rounded-xl overflow-hidden"
                     style={{ border: `1px solid ${c}33`, background: 'rgba(255,255,255,0.03)' }}
                   >
                     <div
-                      className="flex justify-between px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-wider text-white/90"
+                      className="flex justify-between px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-wider text-white/90"
                       style={{ background: `linear-gradient(90deg, ${group.gradientFrom}88 0%, ${group.gradientTo}88 100%)`, borderBottom: `1px solid ${c}33` }}
                     >
                       <span>Development Level</span>
@@ -267,7 +334,7 @@ export default function QRCardsPage() {
                       return (
                         <div
                           key={lvl}
-                          className="flex justify-between px-3.5 py-1.5 text-[11px] font-mono"
+                          className="flex justify-between px-3 py-1 text-[10px] font-mono"
                           style={{
                             background: isMax ? `${c}20` : 'transparent',
                             borderBottom: lvl < 5 ? `1px solid rgba(255,255,255,0.05)` : 'none',
@@ -285,30 +352,30 @@ export default function QRCardsPage() {
 
                   {/* ── QR Code — Solid White Box ── */}
                   <div
-                    className="mx-4 mb-4 rounded-2xl p-3 flex items-center justify-center bg-white shadow-xl"
+                    className="mx-3 mb-3 rounded-xl p-2 flex items-center justify-center bg-white shadow-lg"
                     style={{
                       border: `2px solid ${c}44`,
-                      boxShadow: `0 0 24px ${c}35, inset 0 1px 0 rgba(255,255,255,0.9)`,
+                      boxShadow: `0 0 18px ${c}35, inset 0 1px 0 rgba(255,255,255,0.9)`,
                     }}
                   >
-                    <QRCodeImage value={qrPayload} size={144} fgColor="#000000" bgColor="#ffffff" className="rounded-xl" />
+                    <QRCodeImage value={qrPayload} size={110} fgColor="#000000" bgColor="#ffffff" className="rounded-lg" />
                   </div>
 
                   {/* ── Footer ── */}
                   <div
-                    className="px-5 py-3 flex items-center justify-between"
+                    className="px-4 py-2 flex items-center justify-between"
                     style={{ borderTop: `1px solid ${c}25`, background: 'rgba(0,0,0,0.2)' }}
                   >
                     <div>
-                      <p className="text-[8px] uppercase tracking-widest font-extrabold text-white/50">QR Payload</p>
-                      <p className="font-mono text-[11px] font-bold text-white/80">{qrPayload}</p>
+                      <p className="text-[7px] uppercase tracking-widest font-extrabold text-white/50">QR Payload</p>
+                      <p className="font-mono text-[10px] font-bold text-white/80">{qrPayload}</p>
                     </div>
                     <button
                       onClick={() => handleCopy(qrPayload)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold active:scale-95 transition-all print:hidden"
+                      className="px-2 py-1 rounded-lg text-xs font-bold active:scale-95 transition-all print:hidden"
                       style={{ background: `${c}22`, color: c, border: `1px solid ${c}44` }}
                     >
-                      {copied === qrPayload ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied === qrPayload ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                     </button>
                   </div>
                 </div>
@@ -319,38 +386,41 @@ export default function QRCardsPage() {
 
         {/* ── TAB 2: PLAYER CARDS ── */}
         {activeTab === 'players' && (
-          <div className="max-w-md mx-auto grid grid-cols-1 gap-6 print:grid-cols-2 print:gap-4 print:max-w-none">
+          <div className="max-w-xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6 players-print-grid print:grid-cols-2 print:gap-5 print:max-w-none justify-items-center">
             {PLAYER_CARDS.map((card) => (
               <div
                 key={card.id}
-                className="rounded-3xl border border-white/10 overflow-hidden shadow-2xl print:shadow-none print:break-inside-avoid print:border-2 print:border-black"
+                className="w-full aspect-square max-w-[280px] rounded-3xl border border-white/15 overflow-hidden shadow-2xl print:shadow-none print:break-inside-avoid print:border-2 print:border-black flex flex-col justify-between p-4 sm:p-5"
                 style={{ background: `linear-gradient(135deg, ${card.bgFrom}, ${card.bgTo})` }}
               >
-                <div className="px-6 pt-6 pb-3 flex items-center justify-between">
+                {/* Header */}
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{card.emoji}</span>
+                    <span className="text-xl">{card.emoji}</span>
                     <div>
-                      <p className="font-display font-extrabold text-lg text-white">{card.label}</p>
-                      <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: card.color }}>CityMint Banker Card</p>
+                      <p className="font-display font-extrabold text-sm text-white leading-tight">{card.label}</p>
+                      <p className="text-[9px] uppercase tracking-widest font-bold opacity-90" style={{ color: card.color }}>CityMint Banker</p>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full border-2 border-white/20 shadow-lg" style={{ backgroundColor: card.color }} />
+                  <div className="w-5 h-5 rounded-full border-2 border-white/30 shadow-md shrink-0" style={{ backgroundColor: card.color }} />
                 </div>
 
-                <div className="flex flex-col items-center py-4">
-                  <div className="w-44 h-44 rounded-2xl bg-white p-2 shadow-xl">
-                    <QRCodeImage value={card.id} size={160} className="w-full h-full" />
+                {/* Center QR Code */}
+                <div className="flex items-center justify-center my-auto py-1">
+                  <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden bg-white p-2 shadow-xl flex items-center justify-center">
+                    <QRCodeImage value={card.id} size={135} className="w-full h-full rounded-xl overflow-hidden" />
                   </div>
                 </div>
 
-                <div className="px-6 pb-6 flex items-center justify-between gap-3">
+                {/* Footer */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
                   <div>
-                    <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold mb-0.5">Card ID</p>
-                    <p className="font-mono font-bold text-sm text-white tracking-wider">{card.id}</p>
+                    <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold leading-none mb-0.5">Card ID</p>
+                    <p className="font-mono font-bold text-xs text-white tracking-wider leading-none">{card.id}</p>
                   </div>
                   <button
                     onClick={() => handleCopy(card.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/10 text-white text-xs font-bold active:scale-95 transition-all print:hidden"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-white text-[10px] font-bold active:scale-95 transition-all print:hidden"
                   >
                     {copied === card.id ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
                   </button>
@@ -369,20 +439,33 @@ export default function QRCardsPage() {
               <h3 className="font-display font-bold text-sm text-[var(--text-secondary)] print:text-black uppercase tracking-wider mb-4">
                 Board Special Spaces
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 print:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 specials-print-grid">
                 {SPECIAL_CARDS.map((sp) => (
-                  <div key={sp.id} className="rounded-3xl border border-[var(--border-custom)] bg-[var(--bg-secondary)] overflow-hidden p-5 shadow-xl print:bg-white print:border-2 print:border-black flex flex-col justify-between">
-                    <div className="text-center mb-4">
-                      <span className="text-4xl mb-2 block">{sp.icon}</span>
-                      <h4 className="font-display font-extrabold text-lg text-[var(--text-primary)] print:text-black">{sp.name}</h4>
-                      <p className="text-xs text-[var(--text-secondary)] print:text-gray-700 mt-1">{sp.desc}</p>
+                  <div
+                    key={sp.id}
+                    className="rounded-3xl overflow-hidden shadow-xl print:break-inside-avoid flex flex-col justify-between"
+                    style={{
+                      background: `linear-gradient(160deg, #121319 0%, #1a1c24 60%, #0e0f14 100%)`,
+                      border: `1.5px solid ${sp.color}55`,
+                      boxShadow: `0 0 0 1px ${sp.color}22, 0 10px 40px ${sp.color}25, 0 4px 12px rgba(0,0,0,0.5)`,
+                    }}
+                  >
+                    <div className="text-center pt-6 pb-3 px-5">
+                      <span className="text-4xl mb-3 block">{sp.icon}</span>
+                      <h4 className="font-display font-extrabold text-lg text-white uppercase tracking-wide">{sp.name}</h4>
+                      <p className="text-xs mt-1" style={{ color: sp.color }}>{sp.desc}</p>
                     </div>
-                    <div className="w-36 h-36 rounded-2xl bg-white p-2 mx-auto border border-[var(--border-custom)] mb-4 flex items-center justify-center"
-                         style={{ boxShadow: `0 0 16px ${sp.color}40` }}>
+                    <div
+                      className="w-36 h-36 rounded-2xl bg-white p-2 mx-auto mb-4 flex items-center justify-center"
+                      style={{ boxShadow: `0 0 16px ${sp.color}40` }}
+                    >
                       <QRCodeImage value={sp.id} size={128} />
                     </div>
-                    <div className="text-center">
-                      <p className="text-[10px] uppercase font-mono font-bold text-[var(--text-secondary)] print:text-black">{sp.id}</p>
+                    <div
+                      className="px-5 py-3 text-center"
+                      style={{ borderTop: `1px solid ${sp.color}25`, background: 'rgba(0,0,0,0.2)' }}
+                    >
+                      <p className="text-[10px] uppercase font-mono font-bold" style={{ color: sp.color }}>{sp.id}</p>
                     </div>
                   </div>
                 ))}
@@ -391,65 +474,94 @@ export default function QRCardsPage() {
 
             {/* Action Cards */}
             <div>
-              <h3 className="font-display font-bold text-sm text-[var(--text-secondary)] print:text-black uppercase tracking-wider mb-4">
+              <h3 className="font-display font-bold text-sm text-[var(--text-secondary)] uppercase tracking-wider mb-4">
                 Action Cards (1–{ACTION_CARDS.length})
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 print:grid-cols-2">
-                {ACTION_CARDS.map((act) => {
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 action-print-grid">
+                {ACTION_CARDS.map((act, idx) => {
                   const payload = `CM-ACTION-${act.id.replace('act-', '')}`;
-                  
-                  const categoryMeta: Record<string, { accent: string; badgeBg: string }> = {
-                    Money:    { accent: '#10B981', badgeBg: '#059669' },
-                    Property: { accent: '#38BDF8', badgeBg: '#0284C7' },
-                    Jail:     { accent: '#F43F5E', badgeBg: '#E11D48' },
-                    Movement: { accent: '#FACC15', badgeBg: '#D97706' },
-                    Special:  { accent: '#C084FC', badgeBg: '#7E22CE' },
+
+                  const categoryMeta: Record<string, { accent: string; badgeBg: string; gradFrom: string; gradTo: string }> = {
+                    Money:    { accent: '#10B981', badgeBg: '#059669', gradFrom: '#064e3b', gradTo: '#022c22' },
+                    Property: { accent: '#38BDF8', badgeBg: '#0284C7', gradFrom: '#0c4a6e', gradTo: '#082f49' },
+                    Jail:     { accent: '#F43F5E', badgeBg: '#E11D48', gradFrom: '#881337', gradTo: '#4c0519' },
+                    Movement: { accent: '#FACC15', badgeBg: '#D97706', gradFrom: '#78350f', gradTo: '#451a03' },
+                    Special:  { accent: '#C084FC', badgeBg: '#7E22CE', gradFrom: '#4a1d96', gradTo: '#2e1065' },
                   };
-                  const meta = categoryMeta[act.category] ?? { accent: '#9CA3AF', badgeBg: '#4B5563' };
+                  const meta = categoryMeta[act.category] ?? { accent: '#9CA3AF', badgeBg: '#4B5563', gradFrom: '#1f2937', gradTo: '#111827' };
 
                   return (
                     <div
                       key={act.id}
-                      className="rounded-2xl border overflow-hidden shadow-lg print:shadow-none print:break-inside-avoid flex transition-transform hover:-translate-y-0.5"
+                      className="rounded-3xl overflow-hidden print:break-inside-avoid flex flex-col justify-between h-full transition-transform hover:-translate-y-1"
                       style={{
-                        borderColor: `${meta.accent}44`,
-                        background: `linear-gradient(135deg, #13151c 0%, #1a1d26 100%)`,
-                        boxShadow: `0 4px 20px rgba(0,0,0,0.4), 0 0 15px ${meta.accent}15`,
+                        background: `linear-gradient(160deg, #121319 0%, #1a1c24 60%, #0e0f14 100%)`,
+                        border: `1.5px solid ${meta.accent}55`,
+                        boxShadow: `0 0 0 1px ${meta.accent}22, 0 10px 40px ${meta.accent}20, 0 4px 12px rgba(0,0,0,0.5)`,
                       }}
                     >
-                      {/* QR Column */}
+                      {/* Header Banner */}
                       <div
-                        className="w-28 shrink-0 flex items-center justify-center p-3"
+                        className="px-4 py-2.5 flex items-center justify-between gap-1 min-h-[34px]"
                         style={{
-                          background: `linear-gradient(180deg, ${meta.badgeBg}33 0%, rgba(0,0,0,0.4) 100%)`,
-                          borderRight: `1px solid ${meta.accent}33`,
+                          background: `linear-gradient(90deg, ${meta.gradFrom} 0%, ${meta.gradTo} 100%)`,
+                          borderBottom: `1px solid ${meta.accent}44`,
                         }}
                       >
-                        <div className="bg-white rounded-xl p-1 shadow-md">
-                          <QRCodeImage value={payload} size={80} />
-                        </div>
+                        <span
+                          className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[9px] uppercase font-extrabold tracking-wider text-white leading-none shrink-0"
+                          style={{ backgroundColor: meta.badgeBg }}
+                        >
+                          {act.category}
+                        </span>
+                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-black/40 text-white/95 border border-white/20 text-[8px] uppercase tracking-wider font-extrabold leading-none shrink-0 whitespace-nowrap">
+                          Action Card
+                        </span>
                       </div>
 
-                      {/* Content Column */}
-                      <div className="flex-1 p-3.5 flex flex-col justify-between min-w-0">
-                        <div>
-                          {/* High Visibility Solid Badge Pill */}
-                          <span
-                            className="inline-block text-[10px] uppercase font-extrabold tracking-wider text-white px-2.5 py-0.5 rounded-full shadow-sm"
-                            style={{ backgroundColor: meta.badgeBg }}
-                          >
-                            {act.category}
-                          </span>
-                          <h4 className="font-display font-extrabold text-sm text-white mt-2 leading-snug tracking-tight">
-                            {act.name}
-                          </h4>
-                          <p className="text-[11px] text-white/70 leading-relaxed mt-1">
-                            {act.description}
-                          </p>
-                        </div>
-                        <p className="text-[9px] font-mono font-bold mt-2 tracking-wider" style={{ color: meta.accent }}>
-                          {payload}
+                      {/* Title & Description */}
+                      <div
+                        className="pt-3.5 pb-3 px-4 text-center flex-1 flex flex-col justify-center items-center min-h-[90px]"
+                        style={{ background: `radial-gradient(ellipse at 50% 0%, ${meta.accent}18 0%, transparent 70%)` }}
+                      >
+                        <h4
+                          className="font-display font-black text-xl text-white uppercase tracking-tight leading-tight"
+                          style={{ textShadow: `0 0 20px ${meta.accent}aa, 0 2px 6px rgba(0,0,0,0.9)` }}
+                        >
+                          {act.name}
+                        </h4>
+                        <p className="text-xs mt-1.5 leading-relaxed" style={{ color: meta.accent }}>
+                          {act.description}
                         </p>
+                      </div>
+
+                      {/* QR Code */}
+                      <div
+                        className="mx-4 mb-4 rounded-2xl p-3 flex items-center justify-center bg-white shadow-xl"
+                        style={{
+                          border: `2px solid ${meta.accent}44`,
+                          boxShadow: `0 0 24px ${meta.accent}35, inset 0 1px 0 rgba(255,255,255,0.9)`,
+                        }}
+                      >
+                        <QRCodeImage value={payload} size={96} fgColor="#000000" bgColor="#ffffff" className="rounded-xl" />
+                      </div>
+
+                      {/* Footer */}
+                      <div
+                        className="px-5 py-3 flex items-center justify-between"
+                        style={{ borderTop: `1px solid ${meta.accent}25`, background: 'rgba(0,0,0,0.2)' }}
+                      >
+                        <div>
+                          <p className="text-[8px] uppercase tracking-widest font-extrabold text-white/50">QR Payload</p>
+                          <p className="font-mono text-[10px] font-bold" style={{ color: meta.accent }}>{payload}</p>
+                        </div>
+                        <button
+                          onClick={() => handleCopy(payload)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold active:scale-95 transition-all print:hidden"
+                          style={{ background: `${meta.accent}22`, color: meta.accent, border: `1px solid ${meta.accent}44` }}
+                        >
+                          {copied === payload ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
                       </div>
                     </div>
                   );
