@@ -720,11 +720,11 @@ export default function ActiveGame() {
 
         {/* TABS 1: Game Loop Dashboard */}
         {activeTab === 'game' && game.status === 'ACTIVE' && (
-          <div className="h-full flex flex-col gap-3 p-3.5 sm:p-5 overflow-y-auto no-scrollbar">
+          <div className="h-full flex flex-col gap-2.5 sm:gap-3 p-2.5 sm:p-4 overflow-y-auto no-scrollbar">
             
             {/* 1. 🏆 Live Multi-Player Scoreboard Strip */}
             <div className="w-full">
-              <div className={`grid gap-2 sm:gap-3 ${
+              <div className={`grid gap-1.5 sm:gap-2.5 ${
                 game.players.length === 2 ? 'grid-cols-2' :
                 game.players.length === 3 ? 'grid-cols-3' :
                 'grid-cols-2 sm:grid-cols-4'
@@ -740,7 +740,7 @@ export default function ActiveGame() {
                       key={player.id}
                       ref={isCurrent ? activePlayerCardRef : null}
                       onClick={() => setInspectPlayerId(player.id)}
-                      className={`px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
+                      className={`px-2.5 py-1.5 sm:px-3 sm:py-2.5 rounded-xl sm:rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
                         isBankrupt
                           ? 'bg-rose-950/20 border-rose-500/30 opacity-60 hover:opacity-90'
                           : isCurrent
@@ -750,7 +750,7 @@ export default function ActiveGame() {
                       title={`Click to view ${player.name}'s portfolio`}
                     >
                       {/* Top Row: Color Token + Player Name + Status Icon */}
-                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-1">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <div className="relative shrink-0 flex items-center justify-center">
                             <span 
@@ -761,7 +761,7 @@ export default function ActiveGame() {
                               <span className="absolute -inset-1 rounded-full border border-[var(--accent-mint)] animate-pulse pointer-events-none" />
                             )}
                           </div>
-                          <span className={`font-display font-extrabold text-xs sm:text-sm truncate ${
+                          <span className={`font-display font-extrabold text-[11px] sm:text-xs truncate ${
                             isBankrupt ? 'text-rose-300 line-through' : 'text-[var(--text-primary)]'
                           }`}>
                             {player.name}
@@ -769,10 +769,10 @@ export default function ActiveGame() {
                         </div>
 
                         {/* Status badge */}
-                        {isJailed && <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 shrink-0">🔒</span>}
-                        {isBankrupt && <span className="text-[10px] px-1 py-0.5 rounded bg-rose-500/20 border border-rose-500/30 shrink-0">🚫</span>}
+                        {isJailed && <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 border border-amber-500/30 shrink-0">🔒</span>}
+                        {isBankrupt && <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 border border-rose-500/30 shrink-0">🚫</span>}
                         {isCurrent && !isBankrupt && (
-                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[var(--accent-mint)] text-[var(--bg-primary)] shrink-0 hidden sm:inline-block">
+                          <span className="text-[7.5px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-[var(--accent-mint)] text-[var(--bg-primary)] shrink-0 hidden sm:inline-block">
                             TURN
                           </span>
                         )}
@@ -780,15 +780,15 @@ export default function ActiveGame() {
 
                       {/* Bottom Row: Balance + Property Count Tag */}
                       <div className="flex items-center justify-between gap-1">
-                        <span className="font-mono font-bold text-xs sm:text-sm text-[var(--text-primary)] tracking-tight">
+                        <span className="font-mono font-bold text-xs text-[var(--text-primary)] tracking-tight">
                           {isBankrupt ? (
-                            <span className="text-[10px] text-rose-400 font-extrabold uppercase">BANKRUPT</span>
+                            <span className="text-[9px] text-rose-400 font-extrabold uppercase">BANKRUPT</span>
                           ) : (
                             `₹${player.balance.toLocaleString()}`
                           )}
                         </span>
                         {!isBankrupt && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-secondary)] shrink-0">
+                          <span className="inline-flex items-center gap-0.5 text-[8.5px] font-extrabold px-1 py-0.2 rounded-md bg-[var(--bg-primary)] border border-[var(--border-custom)] text-[var(--text-secondary)] shrink-0">
                             <span>🏢</span>
                             <span>{propsCount}</span>
                           </span>

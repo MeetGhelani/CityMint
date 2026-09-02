@@ -147,6 +147,24 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
           #${SCANNER_ELEMENT_ID} span {
             display: none !important;
           }
+
+          @keyframes laser-sweep {
+            0% {
+              top: 5%;
+              opacity: 0.3;
+            }
+            50% {
+              top: 92%;
+              opacity: 1;
+            }
+            100% {
+              top: 5%;
+              opacity: 0.3;
+            }
+          }
+          .animate-laser-sweep {
+            animation: laser-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          }
         `}</style>
 
         {/* Glowing Camera Portal Container */}
@@ -161,9 +179,9 @@ export default function QRScanner({ onScan, onClose, title = 'Scan QR Code' }: Q
           <span className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-[var(--accent-mint)]/80 rounded-bl-md pointer-events-none z-10" />
           <span className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-[var(--accent-mint)]/80 rounded-br-md pointer-events-none z-10" />
 
-          {/* Floating Laser scan line */}
+          {/* Floating Laser scan line (sweeps all the way from top 5% to bottom 92%) */}
           {!cameraError && isReady && (
-            <div className="absolute inset-x-4 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-mint)] to-transparent animate-scan-line pointer-events-none z-10" />
+            <div className="absolute inset-x-4 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-mint)] to-transparent animate-laser-sweep pointer-events-none z-20 shadow-[0_0_12px_var(--accent-mint)]" />
           )}
         </div>
 

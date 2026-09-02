@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Gavel, Clock, X, AlertCircle, ShoppingBag } from 'lucide-react';
+import { Gavel, Clock, X, AlertCircle, ShoppingBag, ChevronDown } from 'lucide-react';
 import { Property, Player, PROPERTY_GROUPS } from '@/lib/gameEngine';
 import { soundEffects } from '@/lib/soundEffects';
 
@@ -116,9 +116,12 @@ export default function AuctionModal({
             <Gavel className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2 mb-0.5">
               <span className="text-[9px] uppercase font-extrabold tracking-widest text-amber-400">Live Auction 🔨</span>
-              <span className="text-[9px] text-[var(--text-secondary)]">• Base: ₹{property.purchasePrice}</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/35 text-[10px] font-mono font-extrabold text-amber-300 shadow-sm">
+                <span className="text-[8.5px] uppercase font-bold text-amber-400/90 tracking-wider">Base:</span>
+                <span>₹{property.purchasePrice.toLocaleString()}</span>
+              </span>
             </div>
             <h2 className="font-display font-extrabold text-xl text-[var(--text-primary)] truncate">{property.cityName}</h2>
           </div>
@@ -180,17 +183,22 @@ export default function AuctionModal({
             <div className="space-y-2 pt-1 border-t border-amber-500/20">
               <div>
                 <label className="text-[9px] uppercase font-bold text-[var(--text-secondary)] block mb-1">Select Buyer</label>
-                <select
-                  value={directBuyerId}
-                  onChange={(e) => setDirectBuyerId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-mint)]"
-                >
-                  {activePlayers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (Cash: ₹{p.balance.toLocaleString()})
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={directBuyerId}
+                    onChange={(e) => setDirectBuyerId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-custom)] text-xs font-bold text-[var(--text-primary)] appearance-none pr-9 focus:outline-none focus:border-[var(--accent-mint)] focus:ring-1 focus:ring-[var(--accent-mint)]/40 shadow-sm cursor-pointer"
+                  >
+                    {activePlayers.map((p) => (
+                      <option key={p.id} value={p.id} className="bg-[var(--bg-secondary)] text-[var(--text-primary)] font-bold py-1">
+                        {p.name} (Cash: ₹{p.balance.toLocaleString()})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center text-[var(--accent-mint)]">
+                    <ChevronDown className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                </div>
               </div>
 
               <div>
