@@ -347,19 +347,9 @@ export function purchaseProperty(state: GameState, playerId: string, propertyId:
     return p;
   });
 
-  const transaction: GameTransaction = {
-    id: crypto.randomUUID(),
-    turnNumber: state.turnNumber,
-    type: 'PURCHASE',
-    sourcePlayerId: playerId,
-    amount: property.purchasePrice,
-    propertyId: propertyId,
-    description: `${player.name} purchased ${property.cityName} for ₹${property.purchasePrice}`,
-    createdAt: new Date().toISOString(),
-  };
-
   // Perform Group Bonus Check: All properties in group owned by SAME player
   let updatedCompletedGroups = [...state.completedGroups];
+  let monopolyBonusText = '';
   const group = PROPERTY_GROUPS[property.groupId];
   if (group) {
     const groupProperties = updatedProperties.filter((p) => p.groupId === property.groupId);
@@ -368,15 +358,27 @@ export function purchaseProperty(state: GameState, playerId: string, propertyId:
 
     if (allOwnedBySamePlayer && !alreadyCompleted) {
       updatedCompletedGroups.push(property.groupId);
-      // Automatically upgrade all properties in group from Level 1 to Level 2
+      // Automatically upgrade all properties in group by +1 level
       updatedProperties = updatedProperties.map((p) => {
         if (p.groupId === property.groupId) {
           return { ...p, level: Math.min(p.level + 1, 5) };
         }
         return p;
       });
+      monopolyBonusText = ` 🎉 MONOPOLY SET COMPLETED! All ${group.name} properties upgraded +1 Level!`;
     }
   }
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'PURCHASE',
+    sourcePlayerId: playerId,
+    amount: property.purchasePrice,
+    propertyId: propertyId,
+    description: `${player.name} purchased ${property.cityName} for ₹${property.purchasePrice}${monopolyBonusText}`,
+    createdAt: new Date().toISOString(),
+  };
 
   return {
     ...state,
@@ -1715,19 +1717,9 @@ export function executeAuctionWin(
     return p;
   });
 
-  const transaction: GameTransaction = {
-    id: crypto.randomUUID(),
-    turnNumber: state.turnNumber,
-    type: 'PURCHASE',
-    sourcePlayerId: winningPlayerId,
-    amount: winningBidAmount,
-    propertyId: propertyId,
-    description: `${player.name} won live auction for ${property.cityName} at ₹${winningBidAmount}`,
-    createdAt: new Date().toISOString(),
-  };
-
   // Perform Group Completion Check: All properties in group owned by SAME player
   let updatedCompletedGroups = [...state.completedGroups];
+  let monopolyBonusText = '';
   const group = PROPERTY_GROUPS[property.groupId];
   if (group) {
     const groupProperties = updatedProperties.filter((p) => p.groupId === property.groupId);
@@ -1742,8 +1734,20 @@ export function executeAuctionWin(
         }
         return p;
       });
+      monopolyBonusText = ` 🎉 MONOPOLY SET COMPLETED! All ${group.name} properties upgraded +1 Level!`;
     }
   }
+
+  const transaction: GameTransaction = {
+    id: crypto.randomUUID(),
+    turnNumber: state.turnNumber,
+    type: 'PURCHASE',
+    sourcePlayerId: winningPlayerId,
+    amount: winningBidAmount,
+    propertyId: propertyId,
+    description: `${player.name} won live auction for ${property.cityName} at ₹${winningBidAmount}${monopolyBonusText}`,
+    createdAt: new Date().toISOString(),
+  };
 
   return {
     ...state,

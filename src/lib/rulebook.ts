@@ -83,7 +83,7 @@ export const RULEBOOK_SECTIONS: RuleSection[] = [
     content: [
       'Step 1: Inspect Rent Info Without Paying 🔍: If any player wants to check the current rent level, base rent, or upgrade price of a property, tell the Banker to scan its Property QR code. The app displays full property details, rent breakdown, and level multiplier. The Banker can simply inspect the info and tap the Close button (✕) without clicking "Pay Rent" or "Buy Property"!',
       'Step 2: Rent Multipliers: Level 1 = 1.00×, Level 2 = 1.40×, Level 3 = 1.80×, Level 4 = 2.50×, Level 5 (MAX) = 3.50×.',
-      'Step 3: Monopoly Set Bonus: When a SINGLE player owns ALL properties in a color group, every property in that set automatically upgrades to Level 2 (1.40× rent)!',
+      'Step 3: Monopoly Set Auto-Upgrade 🎉: When a player buys or wins the FINAL missing property to complete a color set (e.g., acquiring the 3rd of 3 cities in a group), ALL properties in that color group automatically receive a +1 Level Upgrade (up to Level 5 max) and the LATEST activity banner announces the set completion and level upgrades!',
       'Step 4: Free Self-Landing Upgrade: When landing on your OWN property, you receive a FREE +1 Level Upgrade (up to Level 5 max) at zero cost!'
     ]
   },
